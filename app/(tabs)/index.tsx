@@ -1,98 +1,97 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import React from "react";
+import {
+    Platform,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 export default function HomeScreen() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.page}>
+      <Text style={styles.header}>HOME</Text>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <View style={styles.cardContainer}>
+        <Text style={styles.cardTitle}>
+          カテゴリー:文化祭
+          {"\n"}MISSION
+        </Text>
+
+        <View style={styles.previewBox}>
+          <Text style={styles.previewText}>体育館で写真を撮ろう！</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeTitle}>REWARD</Text>
+            <Text style={styles.badgeValue}>+500PTS</Text>
+          </View>
+          <View style={styles.badge}>
+            <Text style={styles.badgeTitle}>終了まで…</Text>
+            <Text style={styles.badgeValue}>00:02:12</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.startButton} activeOpacity={0.85}>
+          <Text style={styles.startButtonText}>START MISSION ›</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  page: {
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 20 : 12,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  header: { paddingTop: 8, paddingLeft: 20, fontWeight: "800", fontSize: 18 },
+  cardContainer: {
+    margin: 18,
+    borderWidth: 2,
+    borderColor: "#000",
+    padding: 16,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    elevation: 6,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  cardTitle: { textAlign: "center", fontWeight: "700", marginBottom: 12 },
+  previewBox: {
+    height: 160,
+    backgroundColor: "#ededee",
+    borderWidth: 1,
+    borderColor: "#cfcfcf",
+    justifyContent: "center",
+    alignItems: "center",
   },
+  previewText: { color: "#111", fontWeight: "700" },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  badge: {
+    width: 120,
+    height: 44,
+    borderWidth: 1,
+    borderColor: "#cfcfcf",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeTitle: { fontSize: 10, color: "#666" },
+  badgeValue: { fontWeight: "700", marginTop: 4 },
+  startButton: {
+    marginTop: 16,
+    backgroundColor: "#000",
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  startButtonText: { color: "#fff", fontWeight: "700" },
 });
