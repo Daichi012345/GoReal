@@ -1,7 +1,7 @@
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
 import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 
@@ -9,7 +9,6 @@ export default function TabLayout() {
   return (
     <Tabs tabBar={(props) => <CustomFooter {...props} />} screenOptions={{ headerShown: false }}>
       <Tabs.Screen name="index" options={{ title: "Home" }} />
-      <Tabs.Screen name="category" options={{ title: "Category" }} />
       <Tabs.Screen name="community" options={{ title: "Community" }} />
       <Tabs.Screen name="mypage" options={{ title: "My Page" }} />
     </Tabs>
@@ -36,8 +35,6 @@ function CustomFooter({ state, descriptors, navigation }: BottomTabBarProps) {
             switch (route.name) {
               case "index":
                 return "house.fill";
-              case "category":
-                return "star.fill";
               case "community":
                 return "person.3.fill";
               default:
