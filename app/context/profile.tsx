@@ -9,6 +9,7 @@ type Profile = {
 type ProfileContextType = {
   profile: Profile;
   setProfile: (p: Partial<Profile>) => void;
+  nextAvatar: () => void;
 };
 
 const defaultProfile: Profile = {
@@ -22,10 +23,23 @@ const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfileState] = useState<Profile>(defaultProfile);
 
+  const avatarOptions = [
+    require('@/assets/images/icon.jpg'),
+    require('@/assets/images/react-logo.png'),
+  ];
+
   const setProfile = (p: Partial<Profile>) => setProfileState((prev) => ({ ...prev, ...p }));
 
+  const nextAvatar = () => {
+    setProfileState((prev) => {
+      const idx = avatarOptions.findIndex((a) => a === prev.avatar);
+      const next = avatarOptions[(idx + 1) % avatarOptions.length];
+      return { ...prev, avatar: next };
+    });
+  };
+
   return (
-    <ProfileContext.Provider value={{ profile, setProfile }}>
+    <ProfileContext.Provider value={{ profile, setProfile, nextAvatar }}>
       {children}
     </ProfileContext.Provider>
   );
