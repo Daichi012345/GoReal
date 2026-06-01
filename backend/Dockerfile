@@ -8,6 +8,8 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3000
+RUN apt-get update && apt-get install -y netcat-openbsd
 
-CMD ["npm","run","dev"]
+RUN chmod +x wait-for-it.sh
+
+CMD ["./wait-for-it.sh", "db", "npm", "run", "dev"]
