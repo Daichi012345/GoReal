@@ -1,4 +1,3 @@
-```sql
 -- ==========================================
 -- GoReal DB 初期化SQL
 -- ==========================================
@@ -139,29 +138,13 @@ CREATE TABLE group_members (
 
 CREATE TABLE events (
 
-    event_id INT
-    AUTO_INCREMENT PRIMARY KEY,
+    event_id INT AUTO_INCREMENT PRIMARY KEY,
 
-    group_id INT
-    NOT NULL,
+    group_id INT NOT NULL,
 
-    event_name VARCHAR(100)
-    NOT NULL,
+    event_name VARCHAR(100) NOT NULL,
 
-    category VARCHAR(50)
-    NOT NULL,
-
-    start_date DATETIME
-    NOT NULL,
-
-    end_date DATETIME
-    NOT NULL,
-
-    status ENUM(
-        'WAITING',
-        'RUNNING',
-        'END'
-    ) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_event_group
     FOREIGN KEY (group_id)
@@ -275,4 +258,180 @@ CREATE TABLE posts (
     )
 
 );
-```
+
+
+-- ==========================================
+-- TEST USERS
+-- ==========================================
+
+INSERT INTO users
+(
+    user_name,
+    email,
+    password,
+    role,
+    total_exp,
+    level_id
+)
+VALUES
+(
+    '三好',
+    'miyoshi@test.com',
+    'password',
+    'HOST',
+    500,
+    3
+),
+(
+    '田中',
+    'tanaka@test.com',
+    'password',
+    'PARTICIPANT',
+    150,
+    2
+),
+(
+    '山田',
+    'yamada@test.com',
+    'password',
+    'PARTICIPANT',
+    0,
+    1
+);
+
+-- ==========================================
+-- TEST GROUP
+-- ==========================================
+
+INSERT INTO community_groups
+(
+    group_name,
+    group_code,
+    created_by
+)
+VALUES
+(
+    '3-1クラス',
+    'ABC123',
+    1
+);
+
+-- ==========================================
+-- TEST MEMBERS
+-- ==========================================
+
+INSERT INTO group_members
+(
+    group_id,
+    user_id
+)
+VALUES
+(1,1),
+(1,2),
+(1,3);
+
+-- ==========================================
+-- TEST EVENTS
+-- ==========================================
+
+INSERT INTO events
+(
+    group_id,
+    event_name
+)
+VALUES
+(
+    1,
+    '文化祭2026'
+),
+(
+    1,
+    '体育祭2026'
+);
+
+-- ==========================================
+-- TEST MISSIONS
+-- ==========================================
+
+INSERT INTO missions
+(
+    event_id,
+    mission_title,
+    mission_detail,
+    reward_exp
+)
+VALUES
+(
+    1,
+    '体育館の写真を撮ろう',
+    '文化祭会場である体育館の写真を投稿してください',
+    100
+),
+(
+    1,
+    '模擬店の写真を撮ろう',
+    '好きな模擬店の写真を投稿してください',
+    150
+),
+(
+    1,
+    'クラスTシャツを投稿しよう',
+    'クラスTシャツが写るように撮影してください',
+    200
+),
+(
+    2,
+    '玉入れの写真を撮ろう',
+    '競技中の玉入れの様子を撮影してください',
+    100
+),
+(
+    2,
+    'リレーの写真を撮ろう',
+    'リレー競技中の写真を投稿してください',
+    150
+),
+(
+    2,
+    '応援団の写真を撮ろう',
+    '応援団の様子を撮影してください',
+    200
+);
+
+-- ==========================================
+-- TEST SUBMISSION
+-- ==========================================
+
+INSERT INTO mission_submissions
+(
+    mission_id,
+    user_id,
+    photo_path,
+    comment,
+    status
+)
+VALUES
+(
+    1,
+    2,
+    '/uploads/gym.jpg',
+    '体育館の写真を撮りました',
+    'APPROVED'
+);
+
+-- ==========================================
+-- TEST POST
+-- ==========================================
+
+INSERT INTO posts
+(
+    submission_id,
+    user_id,
+    caption
+)
+VALUES
+(
+    1,
+    2,
+    '文化祭楽しみました！'
+);
