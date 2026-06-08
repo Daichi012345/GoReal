@@ -50,12 +50,12 @@ export default function AdminSceneScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {SCENES.map((scene) => {
-          const isActive = selectedScene === scene.id;
+          const isActive = selectedScene === scene.title;
           return (
             <TouchableOpacity
               key={scene.id}
               style={[styles.card, isActive && styles.cardActive]}
-              onPress={() => setSelectedScene(scene.id)}
+              onPress={() => setSelectedScene(scene.title)}
               activeOpacity={0.85}
             >
               <Text
