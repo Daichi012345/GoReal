@@ -8,27 +8,32 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { FriendsProvider } from './context/friends';
-import { ProfileProvider } from './context/profile';
-
-// Remove unstable anchor so the router shows the root (`app/index.tsx`) first
+import { AuthProvider } from "./context/AuthContext";
+import { FriendsProvider } from "./context/friends";
+import { ProfileProvider } from "./context/profile";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <ProfileProvider>
-        <FriendsProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen
-              name="modal"
-              options={{ presentation: "modal", title: "Modal", headerShown: true }}
-            />
-          </Stack>
-          <StatusBar style="auto" />
-        </FriendsProvider>
-      </ProfileProvider>
+      <AuthProvider>
+        <ProfileProvider>
+          <FriendsProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen
+                name="modal"
+                options={{
+                  presentation: "modal",
+                  title: "Modal",
+                  headerShown: true,
+                }}
+              />
+            </Stack>
+            <StatusBar style="auto" />
+          </FriendsProvider>
+        </ProfileProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

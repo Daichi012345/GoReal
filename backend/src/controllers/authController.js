@@ -1,5 +1,6 @@
 const db = require("../config/db");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // ====================
 // 新規登録
@@ -91,19 +92,32 @@ const login = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    const token = jwt.sign(
+      {
+        user_id: user.user_id,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET || "secret_key",
+      { expiresIn: "7d" }
+    );
+
+    return res.status(200).json({
       message: "ログイン成功",
-      user_id: user.user_id,
-      user_name: user.user_name,
-      email: user.email,
-      role: user.role,
-      total_exp: user.total_exp,
-      level_id: user.level_id,
+      token,
+      user: {
+        user_id: user.user_id,
+        user_name: user.user_name,
+        email: user.email,
+        role: user.role,
+        total_exp: user.total_exp,
+        level_id: user.level_id,
+      },
     });
   } catch (err) {
     console.error(err);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "サーバーエラー",
     });
   }

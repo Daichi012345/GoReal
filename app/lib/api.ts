@@ -1,4 +1,6 @@
 import Constants from 'expo-constants';
+// @ts-ignore
+const SecureStore = require('expo-secure-store');
 
 const FALLBACK_HOSTS = [
   'http://10.200.2.224:3000',
@@ -26,7 +28,13 @@ export const tryFetch = async (path: string, options?: RequestInit): Promise<Res
     const url = `${host}${path}`;
     console.log('tryFetch ->', url);
     try {
-      const res = await fetch(url, options);
+      // attach Authorization header if token exists
+      const token = await SecureStore.getItemAsync('authToken');
+      const headers = {
+        ...(options && options.headers ? (options.headers as Record<string,string>) : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+      const res = await fetch(url, { ...(options || {}), headers });
       return res;
     } catch (err) {
       lastErr = err;
