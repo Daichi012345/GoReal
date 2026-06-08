@@ -1,31 +1,54 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import tryFetch from './lib/api';
+import { useAuth } from './context/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const onLogin = (role: "admin" | "participant") => {
-    // TODO: 認証ロジックをここに追加
-    console.log(role === "admin" ? "管理者ログイン" : "参加者ログイン", {
-      email,
-      password,
-    });
-    if (role === "admin") {
-      router.replace("/admin-map");
-    } else {
-      router.replace("/(tabs)");
+  const [loading, setLoading] = useState(false);
+  const auth = useAuth();
+
+  const onLogin = async (role: "admin" | "participant") => {
+    setLoading(true);
+    try {
+      const res = await tryFetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data: any = await res.json();
+      if (res.ok) {
+        if (data.token && data.user) await auth.signIn(data.token, data.user);
+        if (role === 'admin') {
+          router.replace('/admin-map');
+        } else {
+          router.replace('/(tabs)');
+        }
+      } else if (res.status === 401) {
+        Alert.alert('ログイン失敗', data.message || 'メールアドレスまたはパスワードが違います');
+      } else {
+        Alert.alert('エラー', data.message || 'ログインに失敗しました');
+      }
+    } catch (err) {
+      console.error(err);
+      const msg = err instanceof Error ? err.message : String(err);
+      Alert.alert('エラー', `サーバーに接続できませんでした: ${msg}`);
+    } finally {
+      setLoading(false);
     }
   };
 
