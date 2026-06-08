@@ -1,16 +1,17 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import tryFetch from './lib/api';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -18,26 +19,51 @@ export default function SignupScreen() {
   const [email2, setEmail2] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const onRegister = () => {
+
+  const onRegister = async () => {
     if (!email || !email2 || !password || !password2) {
-      Alert.alert("入力エラー", "全ての項目を入力してください");
+      Alert.alert('入力エラー', '全ての項目を入力してください');
       return;
     }
     if (email !== email2) {
-      Alert.alert("入力エラー", "メールアドレスが一致しません");
+      Alert.alert('入力エラー', 'メールアドレスが一致しません');
       return;
     }
     if (password !== password2) {
-      Alert.alert("入力エラー", "パスワードが一致しません");
+      Alert.alert('入力エラー', 'パスワードが一致しません');
       return;
     }
 
-    // TODO: サーバー送信などの登録処理を実装
-    console.log("登録", { email, password });
-    Alert.alert("登録完了", "登録が完了しました。");
-    // 登録後はログイン画面へ戻す
-    router.replace("/login");
+    setLoading(true);
+    try {
+      const user_name = email.split('@')[0] || email;
+      const res = await tryFetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_name, email, password }),
+      });
+      const data: any = await res.json();
+
+      if (res.ok) {
+        Alert.alert('登録完了', '登録が完了しました。ログインしてください。', [
+          { text: 'OK', onPress: () => router.replace('/login') },
+        ]);
+      } else if (res.status === 409) {
+        Alert.alert('登録失敗', data.message || 'メールアドレスは既に登録されています');
+      } else if (res.status === 400) {
+        Alert.alert('入力エラー', data.message || '入力が不正です');
+      } else {
+        Alert.alert('エラー', data.message || '登録に失敗しました');
+      }
+    } catch (err) {
+      console.error(err);
+      const msg = err instanceof Error ? err.message : String(err);
+      Alert.alert('エラー', `サーバーに接続できませんでした: ${msg}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -90,11 +116,12 @@ export default function SignupScreen() {
           />
 
           <TouchableOpacity
-            style={styles.registerButton}
+            style={[styles.registerButton, loading ? styles.disabledButton : null]}
             onPress={onRegister}
             activeOpacity={0.85}
+            disabled={loading}
           >
-            <Text style={styles.registerButtonText}>登録</Text>
+            <Text style={styles.registerButtonText}>{loading ? "送信中…" : "登録"}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -142,5 +169,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 16,
     letterSpacing: 0.6,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });
