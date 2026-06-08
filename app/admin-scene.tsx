@@ -1,13 +1,13 @@
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 const SCENES = [
@@ -19,7 +19,10 @@ const SCENES = [
 export default function AdminSceneScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const facilityName = typeof params.facilityName === "string" ? params.facilityName : "選択された施設";
+  const facilityName =
+    typeof params.facilityName === "string"
+      ? params.facilityName
+      : "選択された施設";
   const [selectedScene, setSelectedScene] = useState<string | null>(null);
   const [customScene, setCustomScene] = useState("");
 
@@ -27,13 +30,18 @@ export default function AdminSceneScreen() {
     if (!selectedScene) {
       return;
     }
-    router.push(`/admin-scene-confirm?facilityName=${encodeURIComponent(facilityName)}&scene=${encodeURIComponent(selectedScene)}`);
+    router.push(
+      `/admin-scene-confirm?facilityName=${encodeURIComponent(facilityName)}&scene=${encodeURIComponent(selectedScene)}`,
+    );
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
           <Text style={styles.backButtonText}>戻る</Text>
         </TouchableOpacity>
         <Text style={styles.title}>どのシーンで使いますか？</Text>
@@ -50,7 +58,11 @@ export default function AdminSceneScreen() {
               onPress={() => setSelectedScene(scene.id)}
               activeOpacity={0.85}
             >
-              <Text style={[styles.cardTitle, isActive && styles.cardTitleActive]}>{scene.title}</Text>
+              <Text
+                style={[styles.cardTitle, isActive && styles.cardTitleActive]}
+              >
+                {scene.title}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -65,7 +77,10 @@ export default function AdminSceneScreen() {
             returnKeyType="done"
           />
           <TouchableOpacity
-            style={[styles.addButton, !customScene.trim() && styles.addButtonDisabled]}
+            style={[
+              styles.addButton,
+              !customScene.trim() && styles.addButtonDisabled,
+            ]}
             onPress={() => {
               const trimmed = customScene.trim();
               if (!trimmed) return;
@@ -81,18 +96,31 @@ export default function AdminSceneScreen() {
 
         {customScene.trim() ? (
           <TouchableOpacity
-            style={[styles.card, selectedScene === customScene.trim() && styles.cardActive]}
+            style={[
+              styles.card,
+              selectedScene === customScene.trim() && styles.cardActive,
+            ]}
             onPress={() => setSelectedScene(customScene.trim())}
             activeOpacity={0.85}
           >
-            <Text style={[styles.cardTitle, selectedScene === customScene.trim() && styles.cardTitleActive]}>{customScene.trim()}</Text>
+            <Text
+              style={[
+                styles.cardTitle,
+                selectedScene === customScene.trim() && styles.cardTitleActive,
+              ]}
+            >
+              {customScene.trim()}
+            </Text>
           </TouchableOpacity>
         ) : null}
       </ScrollView>
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.nextButton, !selectedScene && styles.nextButtonDisabled]}
+          style={[
+            styles.nextButton,
+            !selectedScene && styles.nextButtonDisabled,
+          ]}
           onPress={handleNext}
           activeOpacity={0.85}
           disabled={!selectedScene}

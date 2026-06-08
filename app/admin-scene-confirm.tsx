@@ -1,17 +1,30 @@
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 export default function AdminSceneConfirmScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const facilityName = typeof params.facilityName === "string" ? params.facilityName : "選択された施設";
-  const scene = typeof params.scene === "string" ? params.scene : "選択されたシーン";
+  const facilityName =
+    typeof params.facilityName === "string"
+      ? params.facilityName
+      : "選択された施設";
+  const scene =
+    typeof params.scene === "string" ? params.scene : "選択されたシーン";
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
           <Text style={styles.backButtonText}>戻る</Text>
         </TouchableOpacity>
         <Text style={styles.title}>シーンの確認</Text>
@@ -28,7 +41,11 @@ export default function AdminSceneConfirmScreen() {
       </View>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.button} onPress={() => router.replace('/admin')} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.replace("/admin")}
+          activeOpacity={0.85}
+        >
           <Text style={styles.buttonText}>完了して戻る</Text>
         </TouchableOpacity>
       </View>

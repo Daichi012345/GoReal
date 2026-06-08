@@ -2,13 +2,13 @@ import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 
@@ -19,28 +19,41 @@ const fallbackRegion = {
   longitudeDelta: 0.01,
 };
 
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+) {
   const toRad = (value: number) => (value * Math.PI) / 180;
   const R = 6371000;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
 function getPlaceType(tags: Record<string, string>) {
   if (tags.amenity) {
-    if (["school", "university", "college", "kindergarten"].includes(tags.amenity)) {
+    if (
+      ["school", "university", "college", "kindergarten"].includes(tags.amenity)
+    ) {
       return "学校";
     }
     if (["theatre", "concert_hall", "cinema"].includes(tags.amenity)) {
       return "ライブ";
     }
-    if (["community_centre", "library", "townhall", "ferry_terminal"].includes(tags.amenity)) {
+    if (
+      ["community_centre", "library", "townhall", "ferry_terminal"].includes(
+        tags.amenity,
+      )
+    ) {
       return "施設";
     }
   }
@@ -70,10 +83,14 @@ function getPlaceDescription(tags: Record<string, string>) {
 }
 
 function escapeOverpassQuery(value: string) {
-  return value.replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\n/g, " ");
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ");
 }
 
-async function fetchNearbyPlaces(latitude: number, longitude: number, queryText = "") {
+async function fetchNearbyPlaces(
+  latitude: number,
+  longitude: number,
+  queryText = "",
+) {
   const escapedQuery = escapeOverpassQuery(queryText.trim());
   const searchFilter = escapedQuery
     ? `node["name"~"${escapedQuery}",i](around:5000,${latitude},${longitude});\n  way["name"~"${escapedQuery}",i](around:5000,${latitude},${longitude});\n  relation["name"~"${escapedQuery}",i](around:5000,${latitude},${longitude});\n  node["operator"~"${escapedQuery}",i](around:5000,${latitude},${longitude});\n  way["operator"~"${escapedQuery}",i](around:5000,${latitude},${longitude});\n  relation["operator"~"${escapedQuery}",i](around:5000,${latitude},${longitude});\n  node["brand"~"${escapedQuery}",i](around:5000,${latitude},${longitude});\n  way["brand"~"${escapedQuery}",i](around:5000,${latitude},${longitude});\n  relation["brand"~"${escapedQuery}",i](around:5000,${latitude},${longitude});\n`
@@ -175,7 +192,11 @@ export default function AdminMapScreen() {
 
   const handleSearchSubmit = async () => {
     setQuery(searchText);
-    await loadPlaces(currentLocation.latitude, currentLocation.longitude, searchText);
+    await loadPlaces(
+      currentLocation.latitude,
+      currentLocation.longitude,
+      searchText,
+    );
   };
 
   const handlePlaceSelect = (place: any) => {
@@ -212,7 +233,10 @@ export default function AdminMapScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
           <Text style={styles.backButtonText}>戻る</Text>
         </TouchableOpacity>
         <Text style={styles.title}>現在地周辺の施設</Text>
@@ -228,13 +252,21 @@ export default function AdminMapScreen() {
           returnKeyType="search"
           onSubmitEditing={handleSearchSubmit}
         />
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearchSubmit} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.searchButton}
+          onPress={handleSearchSubmit}
+          activeOpacity={0.85}
+        >
           <Text style={styles.searchButtonText}>検索</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.mapCard}>
-        <MapView style={styles.map} region={currentLocation} provider={undefined}>
+        <MapView
+          style={styles.map}
+          region={currentLocation}
+          provider={undefined}
+        >
           <Marker
             coordinate={currentLocation}
             title="現在地"
@@ -247,7 +279,9 @@ export default function AdminMapScreen() {
               coordinate={place.coordinate}
               title={place.name}
               description={`${place.type} - ${Math.round(place.distance)}m`}
-              pinColor={place.id === selectedPlaceId ? "#000" : getPinColor(place.type)}
+              pinColor={
+                place.id === selectedPlaceId ? "#000" : getPinColor(place.type)
+              }
               onPress={() => handlePlaceSelect(place)}
             />
           ))}
@@ -277,12 +311,18 @@ export default function AdminMapScreen() {
               key={place.id}
               style={styles.placeCard}
               activeOpacity={0.8}
-              onPress={() => router.push(`/admin-scene?facilityName=${encodeURIComponent(place.name)}`)}
+              onPress={() =>
+                router.push(
+                  `/admin-scene?facilityName=${encodeURIComponent(place.name)}`,
+                )
+              }
             >
               <View style={styles.placeHeader}>
                 <View>
                   <Text style={styles.placeTitle}>{place.name}</Text>
-                  <Text style={styles.placeDistance}>{Math.round(place.distance)}m</Text>
+                  <Text style={styles.placeDistance}>
+                    {Math.round(place.distance)}m
+                  </Text>
                 </View>
                 <Text style={styles.placeType}>{place.type}</Text>
               </View>
