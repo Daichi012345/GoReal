@@ -22,8 +22,11 @@ export default function LoginScreen() {
       email,
       password,
     });
-    // ログイン成功時はタブのホームへ遷移（履歴置き換え）
-    router.replace("/(tabs)");
+    if (role === "admin") {
+      router.replace("/admin-map");
+    } else {
+      router.replace("/(tabs)");
+    }
   };
 
   const onSignup = () => {
