@@ -43,10 +43,16 @@ export default function AdminSceneConfirmScreen() {
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => router.replace("/admin")}
+          onPress={() =>
+            router.push(
+              `/admin-home?facilityName=${encodeURIComponent(
+                facilityName,
+              )}&scene=${encodeURIComponent(scene)}`,
+            )
+          }
           activeOpacity={0.85}
         >
-          <Text style={styles.buttonText}>完了して戻る</Text>
+          <Text style={styles.buttonText}>次へ</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
