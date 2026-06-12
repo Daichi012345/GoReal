@@ -1,9 +1,10 @@
 import React, { createContext, ReactNode, useContext, useState } from 'react';
+import type { ImageSourcePropType } from 'react-native';
 
 type Profile = {
   name: string;
   handle: string;
-  avatar?: any;
+  avatar?: ImageSourcePropType;
 };
 
 type ProfileContextType = {
@@ -13,9 +14,9 @@ type ProfileContextType = {
 };
 
 const defaultProfile: Profile = {
-  name: 'はるな',
-  handle: '@haruna_0114',
-  avatar: require('@/assets/images/icon.jpg'),
+  name: '',
+  handle: '',
+  avatar: undefined,
 };
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);

@@ -15,6 +15,7 @@ import tryFetch from './lib/api';
 
 export default function SignupScreen() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [email2, setEmail2] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +24,7 @@ export default function SignupScreen() {
 
 
   const onRegister = async () => {
-    if (!email || !email2 || !password || !password2) {
+    if (!name || !email || !email2 || !password || !password2) {
       Alert.alert('入力エラー', '全ての項目を入力してください');
       return;
     }
@@ -38,11 +39,10 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      const user_name = email.split('@')[0] || email;
       const res = await tryFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_name, email, password }),
+        body: JSON.stringify({ user_name: name, email, password }),
       });
       const data: any = await res.json();
 
@@ -73,6 +73,15 @@ export default function SignupScreen() {
         style={styles.container}
       >
         <View style={styles.innerBox}>
+          <TextInput
+            style={styles.input}
+            placeholder="ユーザー名"
+            placeholderTextColor="#777"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="none"
+          />
+
           <TextInput
             style={styles.input}
             placeholder="メールアドレス"

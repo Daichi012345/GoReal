@@ -20,6 +20,10 @@ export const getApiBase = (): string | null => {
   );
 };
 
+export const resolveApiBase = (): string => {
+  return getApiBase() || FALLBACK_HOSTS[0];
+};
+
 export const tryFetch = async (path: string, options?: RequestInit): Promise<Response> => {
   const apiBase = getApiBase();
   const hosts = [apiBase, ...FALLBACK_HOSTS].filter(Boolean) as string[];
