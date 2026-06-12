@@ -75,6 +75,39 @@ CREATE TABLE users (
 );
 
 -- ==========================================
+-- friend_relations
+-- ==========================================
+
+CREATE TABLE friend_relations (
+
+    relation_id INT
+    AUTO_INCREMENT PRIMARY KEY,
+
+    user_id INT
+    NOT NULL,
+
+    friend_user_id INT
+    NOT NULL,
+
+    created_at DATETIME
+    DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_friend_relation_user
+    FOREIGN KEY (user_id)
+    REFERENCES users(user_id),
+
+    CONSTRAINT fk_friend_relation_friend
+    FOREIGN KEY (friend_user_id)
+    REFERENCES users(user_id),
+
+    UNIQUE (
+        user_id,
+        friend_user_id
+    )
+
+);
+
+-- ==========================================
 -- community_groups
 -- ==========================================
 
@@ -275,31 +308,6 @@ INSERT INTO users
     total_exp,
     level_id
 )
-VALUES
-(
-    '三好',
-    'miyoshi@test.com',
-    'password',
-    'HOST',
-    500,
-    3
-),
-(
-    '田中',
-    'tanaka@test.com',
-    'password',
-    'PARTICIPANT',
-    150,
-    2
-),
-(
-    '山田',
-    'yamada@test.com',
-    'password',
-    'PARTICIPANT',
-    0,
-    1
-);
 
 -- ==========================================
 -- TEST GROUP

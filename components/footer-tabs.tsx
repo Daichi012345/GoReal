@@ -1,15 +1,24 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useRouter } from "expo-router";
+import { useRouter, useSegments } from "expo-router";
 import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "../app/context/AuthContext";
 
 export function FooterTabs() {
   const router = useRouter();
+  const { user, isAdminSession } = useAuth();
 
+  const segments = useSegments();
+  const isAdminRoute =
+    segments.includes("admin") ||
+    segments.some((segment) => segment?.startsWith("admin-"));
+  const isAdminUser =
+    isAdminSession || user?.role?.toString().toLowerCase() === "admin";
+  const homePath = isAdminUser || isAdminRoute ? "/admin-home" : "/(tabs)";
   const items = [
-    { label: "HOME", path: "/(tabs)", icon: "house.fill" },
-    { label: "COMMUNITY", path: "/(tabs)/community", icon: "person.3.fill" },
-    { label: "MYPAGE", path: "/(tabs)/mypage", icon: "person.fill" },
+    { label: "HOME", path: homePath, icon: "house.fill" },
+    { label: "COMMUNITY", path: "/community", icon: "person.3.fill" },
+    { label: "MYPAGE", path: "/mypage", icon: "person.fill" },
   ];
 
   return (
@@ -19,7 +28,7 @@ export function FooterTabs() {
         {items.map((it) => (
           <Pressable
             key={it.path}
-            onPress={() => router.push(it.path)}
+            onPress={() => router.replace(it.path)}
             style={styles.footerItem}
           >
             <View style={styles.iconBox}>

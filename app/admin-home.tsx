@@ -1,6 +1,7 @@
 import { FooterTabs } from "@/components/footer-tabs";
+import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Platform,
   SafeAreaView,
@@ -11,6 +12,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+// @ts-ignore
+const SecureStore = require("expo-secure-store");
+
+const MISSION_STORE_KEY = "adminMissions";
+
+type Mission = {
+  id: string;
+  facilityName: string;
+  scene: string;
+  text: string;
+  createdAt: string;
+  status?: string;
+};
 
 export default function AdminHomeScreen() {
   const router = useRouter();
@@ -25,6 +39,27 @@ export default function AdminHomeScreen() {
   const [groupId, setGroupId] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState("");
   const [joinStatus, setJoinStatus] = useState<string | null>(null);
+  const [missions, setMissions] = useState<Mission[]>([]);
+
+  const loadMissions = async () => {
+    try {
+      const stored = await SecureStore.getItemAsync(MISSION_STORE_KEY);
+      const parsed = stored ? (JSON.parse(stored) as Mission[]) : [];
+      setMissions(parsed);
+    } catch (error) {
+      console.warn("Failed to load missions", error);
+    }
+  };
+
+  useEffect(() => {
+    loadMissions();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadMissions();
+    }, []),
+  );
 
   const handleCreate = () => {
     // Pass through facility and scene to the create screen
@@ -99,6 +134,51 @@ export default function AdminHomeScreen() {
           {joinStatus ? (
             <Text style={styles.joinStatus}>{joinStatus}</Text>
           ) : null}
+          <TouchableOpacity
+            style={[
+              styles.groupButton,
+              { backgroundColor: "#2f80ed", marginTop: 14 },
+            ]}
+            onPress={() => router.push({ pathname: "/admin-mission-review" })}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.groupButtonText}>ミッション達成確認</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.missionSection}>
+          <Text style={styles.sectionTitle}>作成済みミッション</Text>
+          {missions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>
+                まだミッションがありません。作成するとここに表示されます。
+              </Text>
+            </View>
+          ) : (
+            missions.map((mission) => (
+              <View key={mission.id} style={styles.missionCard}>
+                <View style={styles.missionHeaderRow}>
+                  <Text style={styles.missionMeta}>
+                    {mission.facilityName} • {mission.scene}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.missionStatus,
+                      mission.status === "達成"
+                        ? styles.statusSuccess
+                        : mission.status === "未達成"
+                          ? styles.statusFailed
+                          : styles.statusPending,
+                    ]}
+                  >
+                    {mission.status || "未確認"}
+                  </Text>
+                </View>
+                <Text style={styles.missionText}>{mission.text}</Text>
+                <Text style={styles.missionDate}>{mission.createdAt}</Text>
+              </View>
+            ))
+          )}
         </View>
 
         <View
@@ -196,4 +276,41 @@ const styles = StyleSheet.create({
   },
   createButtonText: { color: "#fff", fontSize: 18, fontWeight: "800" },
   createArea: { paddingHorizontal: 20, paddingTop: 24 },
+  missionSection: { paddingHorizontal: 20, paddingTop: 18 },
+  emptyState: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 12,
+    backgroundColor: "#fafafa",
+  },
+  emptyStateText: { color: "#666", fontSize: 14, lineHeight: 20 },
+  missionCard: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    marginBottom: 12,
+  },
+  missionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  missionMeta: { color: "#666", fontSize: 13, marginRight: 12 },
+  missionStatus: {
+    fontSize: 12,
+    fontWeight: "700",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  statusSuccess: { color: "#0f5132", backgroundColor: "#d1e7dd" },
+  statusFailed: { color: "#842029", backgroundColor: "#f8d7da" },
+  statusPending: { color: "#664d03", backgroundColor: "#fff3cd" },
+  missionText: { color: "#111", fontSize: 15, lineHeight: 22 },
+  missionDate: { marginTop: 10, color: "#888", fontSize: 12 },
 });
