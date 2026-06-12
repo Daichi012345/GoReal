@@ -8,7 +8,7 @@ const FALLBACK_HOSTS = [
   // "http://127.0.0.1:3000",
   // "http://10.0.2.2:3000",
   // "http://10.0.3.2:3000",
-  "http://192.168.0.2:3000",
+  "http://10.200.5.81:3000",
 ];
 
 export const getApiBase = (): string | null => {
