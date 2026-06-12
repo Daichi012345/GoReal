@@ -1,20 +1,20 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import tryFetch from './lib/api';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from "./context/AuthContext";
+import tryFetch from "./lib/api";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -30,29 +30,32 @@ export default function LoginScreen() {
   const onLogin = async (role: "admin" | "participant") => {
     setLoading(true);
     try {
-      const res = await tryFetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await tryFetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
       const data: any = await res.json();
       if (res.ok) {
         if (data.token && data.user) await auth.signIn(data.token, data.user);
-        if (role === 'admin') {
+        if (role === "admin") {
           // show admin choice modal: issue ID or join as admin
           setShowAdminModal(true);
         } else {
-          router.replace('/(tabs)');
+          router.replace("/(tabs)");
         }
       } else if (res.status === 401) {
-        Alert.alert('ログイン失敗', data.message || 'メールアドレスまたはパスワードが違います');
+        Alert.alert(
+          "ログイン失敗",
+          data.message || "メールアドレスまたはパスワードが違います",
+        );
       } else {
-        Alert.alert('エラー', data.message || 'ログインに失敗しました');
+        Alert.alert("エラー", data.message || "ログインに失敗しました");
       }
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : String(err);
-      Alert.alert('エラー', `サーバーに接続できませんでした: ${msg}`);
+      Alert.alert("エラー", `サーバーに接続できませんでした: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -119,7 +122,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-      
+
       <Modal
         visible={showAdminModal}
         transparent
@@ -129,7 +132,7 @@ export default function LoginScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>管理者としてログイン</Text>
-            <Text style={{ marginBottom: 8, color: '#444' }}>
+            <Text style={{ marginBottom: 8, color: "#444" }}>
               この端末を使って、グループIDを発行する人ですか？それとも管理者として参加しますか？
             </Text>
 
@@ -137,7 +140,7 @@ export default function LoginScreen() {
               style={[styles.modalPrimary, { marginBottom: 10 }]}
               onPress={() => {
                 setShowAdminModal(false);
-                router.replace('/admin-map');
+                router.replace("/admin-map");
               }}
               activeOpacity={0.85}
             >
@@ -155,26 +158,35 @@ export default function LoginScreen() {
               }}
               autoCapitalize="characters"
             />
-            {adminJoinStatus ? <Text style={styles.joinStatus}>{adminJoinStatus}</Text> : null}
+            {adminJoinStatus ? (
+              <Text style={styles.joinStatus}>{adminJoinStatus}</Text>
+            ) : null}
 
             <TouchableOpacity
-              style={[styles.modalPrimary, { backgroundColor: '#111' }]}
+              style={[styles.modalPrimary, { backgroundColor: "#111" }]}
               onPress={() => {
                 const code = adminJoinCode.trim();
                 if (!code) {
-                  setAdminJoinStatus('参加コードを入力してください。');
+                  setAdminJoinStatus("参加コードを入力してください。");
                   return;
                 }
                 setShowAdminModal(false);
-                router.replace(`/admin-home?joinCode=${encodeURIComponent(code)}`);
+                router.replace(
+                  `/admin-home?joinCode=${encodeURIComponent(code)}`,
+                );
               }}
               activeOpacity={0.85}
             >
-              <Text style={[styles.modalPrimaryText, { color: '#fff' }]}>管理者として参加</Text>
+              <Text style={[styles.modalPrimaryText, { color: "#fff" }]}>
+                管理者として参加
+              </Text>
             </TouchableOpacity>
 
-            <Pressable onPress={() => setShowAdminModal(false)} style={{ marginTop: 12 }}>
-              <Text style={{ color: '#666' }}>キャンセル</Text>
+            <Pressable
+              onPress={() => setShowAdminModal(false)}
+              style={{ marginTop: 12 }}
+            >
+              <Text style={{ color: "#666" }}>キャンセル</Text>
             </Pressable>
           </View>
         </View>
@@ -303,5 +315,4 @@ const styles = StyleSheet.create({
   },
   modalPrimaryText: { color: "#fff", fontWeight: "800" },
   joinStatus: { color: "#c0392b", marginBottom: 6 },
-  
 });
