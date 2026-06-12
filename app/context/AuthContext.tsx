@@ -7,7 +7,8 @@ type User = any;
 type AuthContextValue = {
   user: User | null;
   token: string | null;
-  signIn: (token: string, user: User) => Promise<void>;
+  isFirstLogin: boolean;
+  signIn: (token: string, user: User, isFirstLogin?: boolean) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -30,7 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     })();
   }, []);
 
-  const signIn = async (t: string, u: User) => {
+  const signIn = async (t: string, u: User, isFirst: boolean = false) => {
     try {
       await SecureStore.setItemAsync('authToken', t);
       await SecureStore.setItemAsync('userData', JSON.stringify(u));
@@ -39,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setToken(t);
     setUser(u);
+    setIsFirstLogin(isFirst);
   };
 
   const signOut = async () => {
@@ -50,10 +53,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setToken(null);
     setUser(null);
+    setIsFirstLogin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, signIn, signOut }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, token, isFirstLogin, signIn, signOut }}>{children}</AuthContext.Provider>
   );
 };
 
