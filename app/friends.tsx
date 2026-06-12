@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -22,7 +22,11 @@ export default function FriendsScreen() {
       <View style={styles.userRow}>
         <View style={styles.userInfo}>
           <View style={styles.avatarCircle}>
-            <IconSymbol name="person.crop.circle.fill" size={30} color="#2e8bff" />
+            {item.avatar ? (
+              <Image source={{ uri: item.avatar }} style={styles.avatarImage} />
+            ) : (
+              <IconSymbol name="person.crop.circle.fill" size={30} color="#2e8bff" />
+            )}
           </View>
           <View>
             <ThemedText type="defaultSemiBold" style={styles.name}>{item.name}</ThemedText>
@@ -94,7 +98,8 @@ const styles = StyleSheet.create({
   emptyText: { color: '#6b7280', paddingVertical: 12 },
   userRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#eef2f7' },
   userInfo: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1, paddingRight: 12 },
-  avatarCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#eaf2ff', alignItems: 'center', justifyContent: 'center' },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#eaf2ff', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImage: { width: '100%', height: '100%' },
   name: { color: '#111827' },
   handle: { color: '#6b7280', marginTop: 4 },
   addButton: { backgroundColor: '#2e8bff', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },

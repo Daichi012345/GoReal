@@ -3,6 +3,7 @@ const cors = require("cors");
 const path = require("path");
 
 const authRoutes = require("./routes/authRoutes");
+const friendRoutes = require("./routes/friendRoutes");
 const mypageRoutes = require("./routes/mypageRoutes");
 
 const app = express();
@@ -17,6 +18,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/mypage", mypageRoutes);
+app.use("/api/friends", friendRoutes);
 
 app.listen(3000, () => {
   console.log("起動");
