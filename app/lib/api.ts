@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 const SecureStore = require('expo-secure-store');
 
 const FALLBACK_HOSTS = [
-  'http://10.200.2.224:3000',
+  'http://10.200.5.41:3000',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'http://10.0.2.2:3000',
