@@ -34,7 +34,7 @@ export default function MyPageScreen() {
           const userName = user.user_name || user.email;
           setProfile({
             name: userName,
-            handle: `@${(user.email || '').split('@')[0]}`,
+            handle: user.email || '',
             avatar: user.icon_image ? { uri: user.icon_image } : undefined,
           });
           // 初回ログインかつユーザー名が空の場合は設定画面に遷移
@@ -114,7 +114,7 @@ export default function MyPageScreen() {
                 <Image source={friendsImg} style={styles.friendsImage} />
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.iconCircle, styles.iconCircleLarge]}
+                style={styles.iconCircle}
                 accessibilityLabel="settings"
                 onPress={() => router.push('/settings')}
               >
@@ -187,8 +187,7 @@ const styles = StyleSheet.create({
   headerArea: { paddingVertical: 12, paddingHorizontal: 8 },
   headerIcons: { flexDirection: 'row', justifyContent: 'space-between' },
   iconCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
-  iconCircleLarge: { width: 56, height: 56, borderRadius: 28 },
-  settingsImage: { width: 32, height: 32, tintColor: '#111827' },
+  settingsImage: { width: 28, height: 28, tintColor: '#111827' },
   friendsImage: { width: 28, height: 28, tintColor: '#111827' },
   avatarWrap: { alignItems: 'center', marginTop: 8 },
   avatarBorder: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e6e6e6' },
