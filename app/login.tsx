@@ -15,6 +15,8 @@ import {
 } from "react-native";
 import { useAuth } from "./context/AuthContext";
 import tryFetch from "./lib/api";
+// @ts-ignore
+const SecureStore = require("expo-secure-store");
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -39,6 +41,12 @@ export default function LoginScreen() {
       if (res.ok) {
         if (data.token && data.user) await auth.signIn(data.token, data.user);
         if (role === "admin") {
+          // force admin session flag so UI treats this device as admin session
+          try {
+            await SecureStore.setItemAsync("isAdminSession", "true");
+          } catch (e) {
+            console.warn("Failed to set isAdminSession", e);
+          }
           // show admin choice modal: issue ID or join as admin
           setShowAdminModal(true);
         } else {
