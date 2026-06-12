@@ -8,6 +8,18 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+// @ts-ignore
+const SecureStore = require("expo-secure-store");
+
+const MISSION_STORE_KEY = "adminMissions";
+
+type Mission = {
+  id: string;
+  facilityName: string;
+  scene: string;
+  text: string;
+  createdAt: string;
+};
 
 export default function AdminCreateMissionScreen() {
   const router = useRouter();
@@ -26,10 +38,33 @@ export default function AdminCreateMissionScreen() {
 
   const [missionText, setMissionText] = useState(initialMission);
 
-  const handleCreate = () => {
-    // TODO: 保存処理をここに追加（API送信など）
-    // とりあえず完了後は管理画面に戻す
-    router.replace("/admin");
+  const handleCreate = async () => {
+    const text = missionText.trim();
+    if (!text) {
+      return;
+    }
+
+    const newMission: Mission = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      facilityName,
+      scene,
+      text,
+      createdAt: new Date().toLocaleString(),
+    };
+
+    try {
+      const stored = await SecureStore.getItemAsync(MISSION_STORE_KEY);
+      const parsed: Mission[] = stored ? JSON.parse(stored) : [];
+      const updated = [newMission, ...parsed];
+      await SecureStore.setItemAsync(
+        MISSION_STORE_KEY,
+        JSON.stringify(updated),
+      );
+    } catch (error) {
+      console.warn("Failed to save mission", error);
+    }
+
+    router.replace("/admin-home");
   };
 
   return (

@@ -1,13 +1,19 @@
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+// @ts-ignore
+const SecureStore = require("expo-secure-store");
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useAuth } from "../context/AuthContext";
 
 export default function TabLayout() {
   return (
-    <Tabs tabBar={(props) => <CustomFooter {...props} />} screenOptions={{ headerShown: false }}>
+    <Tabs
+      tabBar={(props) => <CustomFooter {...props} />}
+      screenOptions={{ headerShown: false }}
+    >
       <Tabs.Screen name="index" options={{ title: "Home" }} />
       <Tabs.Screen name="community" options={{ title: "Community" }} />
       <Tabs.Screen name="mypage" options={{ title: "My Page" }} />
@@ -16,6 +22,13 @@ export default function TabLayout() {
 }
 
 function CustomFooter({ state, descriptors, navigation }: BottomTabBarProps) {
+  const router = useRouter();
+  const { user, isAdminSession } = useAuth();
+
+  const isAdminUser =
+    isAdminSession || user?.role?.toString().toLowerCase() === "admin";
+  const homeRoute = isAdminUser ? "/admin-home" : "/(tabs)";
+
   return (
     <View style={styles.footerWrap}>
       <View style={styles.footerLine} />
@@ -26,9 +39,45 @@ function CustomFooter({ state, descriptors, navigation }: BottomTabBarProps) {
           const isFocused = state.index === index;
           const color = isFocused ? "#000" : "#bdbdbd";
 
-          const onPress = () => {
-            const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
-            if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+          const onPress = async () => {
+            if (index === 0) {
+              try {
+                const adminFlag =
+                  await SecureStore.getItemAsync("isAdminSession");
+                console.log(
+                  "[Footer] adminFlag:",
+                  adminFlag,
+                  "isAdminUser:",
+                  isAdminUser,
+                );
+                const isAdminNow = adminFlag === "true" || isAdminUser;
+                if (isAdminNow) {
+                  // Use push to ensure navigation to stack screen from tabs
+                  console.log("[Footer] navigating to admin-home");
+                  router.push("/admin-home");
+                  return;
+                }
+              } catch (e) {
+                console.warn("[Footer] SecureStore read failed", e);
+                // fallthrough to normal behavior
+              }
+
+              const event = navigation.emit({
+                type: "tabPress",
+                target: route.key,
+                canPreventDefault: true,
+              });
+              if (!isFocused && !event.defaultPrevented)
+                navigation.navigate(route.name);
+              return;
+            }
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!isFocused && !event.defaultPrevented)
+              navigation.navigate(route.name);
           };
 
           const iconName = (() => {
@@ -43,9 +92,17 @@ function CustomFooter({ state, descriptors, navigation }: BottomTabBarProps) {
           })();
 
           return (
-            <Pressable key={route.key} onPress={onPress} style={styles.footerItem}>
+            <Pressable
+              key={route.key}
+              onPress={onPress}
+              style={styles.footerItem}
+            >
               <View style={[styles.iconBox, isFocused && styles.iconBoxActive]}>
-                <IconSymbol size={20} name={iconName} color={isFocused ? "#fff" : "#7a7a7a"} />
+                <IconSymbol
+                  size={20}
+                  name={iconName}
+                  color={isFocused ? "#fff" : "#7a7a7a"}
+                />
               </View>
               <Text style={[styles.footerLabel, { color }]}>{label}</Text>
             </Pressable>
