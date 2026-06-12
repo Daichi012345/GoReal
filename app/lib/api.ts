@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 const SecureStore = require('expo-secure-store');
 
 const FALLBACK_HOSTS = [
-  'http://10.200.2.224:3000',
+  'http://10.200.5.41:3000',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'http://10.0.2.2:3000',
@@ -18,6 +18,10 @@ export const getApiBase = (): string | null => {
     (Constants.manifest && (Constants.manifest as any).extra && (Constants.manifest as any).extra.API_BASE) ||
     null
   );
+};
+
+export const resolveApiBase = (): string => {
+  return getApiBase() || FALLBACK_HOSTS[0];
 };
 
 export const tryFetch = async (path: string, options?: RequestInit): Promise<Response> => {
