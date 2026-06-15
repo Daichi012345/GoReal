@@ -2,7 +2,9 @@
 -- GoReal DB 初期化SQL
 -- ==========================================
 
-CREATE DATABASE IF NOT EXISTS goreal_db;
+CREATE DATABASE IF NOT EXISTS goreal_db
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
 
 USE goreal_db;
 
