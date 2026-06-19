@@ -7,19 +7,24 @@ export const getApiBase = (): string | null => {
 
 export const resolveApiBase = (): string => {
   const apiBase = getApiBase();
-  if (!apiBase) throw new Error('API_BASE is not set');
+  if (!apiBase) throw new Error("API_BASE is not set");
   return apiBase;
 };
 
-export const tryFetch = async (path: string, options?: RequestInit): Promise<Response> => {
+export const tryFetch = async (
+  path: string,
+  options?: RequestInit,
+): Promise<Response> => {
   const apiBase = resolveApiBase();
   const url = `${apiBase}${path}`;
-  console.log('tryFetch ->', url);
-  
+  console.log("tryFetch ->", url);
+
   // attach Authorization header if token exists
-  const token = await SecureStore.getItemAsync('authToken');
+  const token = await SecureStore.getItemAsync("authToken");
   const headers = {
-    ...(options && options.headers ? (options.headers as Record<string,string>) : {}),
+    ...(options && options.headers
+      ? (options.headers as Record<string, string>)
+      : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
   return fetch(url, { ...(options || {}), headers });
