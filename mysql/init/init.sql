@@ -107,6 +107,75 @@ CREATE TABLE friend_relations (
 
 );
 
+-- friend_requests
+-- ==========================================
+
+CREATE TABLE friend_requests (
+
+    request_id INT
+    AUTO_INCREMENT PRIMARY KEY,
+
+    requester_user_id INT
+    NOT NULL,
+
+    receiver_user_id INT
+    NOT NULL,
+
+    status VARCHAR(16)
+    NOT NULL DEFAULT 'PENDING',
+
+    created_at DATETIME
+    DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_friend_request_requester
+    FOREIGN KEY (requester_user_id)
+    REFERENCES users(user_id),
+
+    CONSTRAINT fk_friend_request_receiver
+    FOREIGN KEY (receiver_user_id)
+    REFERENCES users(user_id),
+
+    UNIQUE (
+        requester_user_id,
+        receiver_user_id
+    )
+
+);
+
+-- notifications
+-- ==========================================
+
+CREATE TABLE notifications (
+
+    notification_id INT
+    AUTO_INCREMENT PRIMARY KEY,
+
+    user_id INT
+    NOT NULL,
+
+    actor_user_id INT,
+
+    type VARCHAR(50)
+    NOT NULL,
+
+    payload TEXT,
+
+    is_read TINYINT(1)
+    NOT NULL DEFAULT 0,
+
+    created_at DATETIME
+    DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_notification_user
+    FOREIGN KEY (user_id)
+    REFERENCES users(user_id),
+
+    CONSTRAINT fk_notification_actor
+    FOREIGN KEY (actor_user_id)
+    REFERENCES users(user_id)
+
+);
+
 -- ==========================================
 -- community_groups
 -- ==========================================
