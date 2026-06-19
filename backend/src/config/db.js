@@ -1,4 +1,5 @@
 require("dotenv").config();
+
 const mysql = require("mysql2/promise");
 
 const db = mysql.createPool({
@@ -7,7 +8,6 @@ const db = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   charset: "utf8mb4",
-  collation: "utf8mb4_unicode_ci",
 });
 
 module.exports = db;
