@@ -1,14 +1,25 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import tryFetch from "../lib/api";
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  time: string;
+  is_read: boolean;
+}
 
 const POSTS = [
   {
@@ -28,6 +39,69 @@ const POSTS = [
 ];
 
 export default function CommunityScreen() {
+  const [showNotif, setShowNotif] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
+
+  const fetchNotifications = async () => {
+    setLoadingNotifications(true);
+    setNotificationError(null);
+
+    try {
+      const response = await tryFetch('/api/notifications');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || '通知の取得に失敗しました');
+      }
+
+      const data = await response.json();
+      if (!Array.isArray(data.notifications)) {
+        throw new Error('通知データが不正です');
+      }
+
+      setNotifications(
+        data.notifications.map((item: any) => ({
+          id: item.id,
+          title:
+            item.type === 'friend_request'
+              ? 'フレンド申請'
+              : item.type === 'friend_request_accepted'
+              ? '申請承認'
+              : item.type === 'friend_added'
+              ? 'フレンド追加'
+              : item.type,
+          body:
+            item.type === 'friend_request'
+              ? item.payload?.actor_name
+                ? `${item.payload.actor_name}さんがフレンド申請しました`
+                : 'フレンド申請を受け取りました'
+              : item.type === 'friend_request_accepted'
+              ? item.payload?.actor_name
+                ? `${item.payload.actor_name}さんが申請を承認しました`
+                : 'フレンド申請が承認されました'
+              : item.payload?.actor_name
+              ? `${item.payload.actor_name}さんがフレンドになりました`
+              : item.body || '',
+          time: item.created_at ? item.created_at.replace('T', ' ') : '',
+          is_read: Boolean(item.is_read),
+        })),
+      );
+    } catch (error: any) {
+      console.warn('fetchNotifications error', error);
+      setNotificationError(error?.message || '通知の取得に失敗しました');
+      setNotifications([]);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showNotif) {
+      fetchNotifications();
+    }
+  }, [showNotif]);
+
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.header}>
@@ -35,11 +109,52 @@ export default function CommunityScreen() {
         <Pressable
           style={styles.searchButton}
           accessibilityRole="button"
-          accessibilityLabel="Search"
+          accessibilityLabel="Notifications"
+          onPress={() => setShowNotif(true)}
         >
-          <IconSymbol size={18} name="magnifyingglass" color="#111" />
+          <IconSymbol size={18} name="bell.fill" color="#111" />
         </Pressable>
       </View>
+
+      <Modal visible={showNotif} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>通知</Text>
+                <Text style={styles.modalSubtitle}>{`${notifications.length} 件`}</Text>
+              </View>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setShowNotif(false)}>
+                <Text style={styles.modalClose}>閉じる</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={styles.notificationList}>
+              {loadingNotifications ? (
+                <Text style={styles.emptyText}>読み込み中...</Text>
+              ) : notificationError ? (
+                <Text style={styles.emptyText}>{notificationError}</Text>
+              ) : notifications.length === 0 ? (
+                <Text style={styles.emptyText}>通知はありません</Text>
+              ) : (
+                notifications.map((n) => (
+                  <View key={n.id} style={[styles.notificationCard, n.is_read ? styles.notificationCardRead : null]}>
+                    <View style={styles.notificationCardHeader}>
+                      <Text style={styles.notificationTitle}>{n.title}</Text>
+                      {!n.is_read && (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>未読</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.notificationBody}>{n.body}</Text>
+                    <Text style={styles.notificationTime}>{n.time}</Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       <ScrollView
         contentContainerStyle={styles.list}
@@ -177,5 +292,61 @@ const styles = StyleSheet.create({
     color: "#7a7a7a",
     letterSpacing: 0.4,
     textAlign: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    maxHeight: '60%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    padding: 12,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '800' },
+  modalSubtitle: { fontSize: 12, color: '#666', marginTop: 4 },
+  closeButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  modalClose: { color: '#007aff', fontWeight: '700', fontSize: 14 },
+  notificationList: {
+    paddingBottom: 24,
+  },
+  notificationCard: {
+    backgroundColor: '#fafafa',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+  },
+  notificationCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  badge: {
+    backgroundColor: '#111',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  emptyText: { textAlign: 'center', color: '#666', padding: 16, fontSize: 14 },
+  notificationTitle: { fontSize: 14, fontWeight: '800', color: '#111' },
+  notificationBody: { fontSize: 13, color: '#444', marginBottom: 8, lineHeight: 18 },
+  notificationTime: { fontSize: 11, color: '#888' },
+  notificationCardRead: {
+    backgroundColor: '#f5f5f5',
   },
 });
