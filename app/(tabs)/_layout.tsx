@@ -45,7 +45,6 @@ function CustomFooter({ state, descriptors, navigation }: BottomTabBarProps) {
                 const adminFlag =
                   await SecureStore.getItemAsync("isAdminSession");
                 console.log(
-                  "[Footer] adminFlag:",
                   adminFlag,
                   "isAdminUser:",
                   isAdminUser,
