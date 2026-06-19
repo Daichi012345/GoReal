@@ -1,30 +1,71 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-
-const SCENES = [
-  { id: "bunka", title: "文化祭" },
-  { id: "taiiku", title: "体育祭" },
-  { id: "ongaku", title: "音楽祭" },
-];
+import { useAuth } from "./context/AuthContext";
+import tryFetch from "./lib/api";
 
 export default function AdminSceneScreen() {
   const router = useRouter();
+  const auth = useAuth();
   const params = useLocalSearchParams();
   const facilityName =
     typeof params.facilityName === "string"
       ? params.facilityName
       : "選択された施設";
+  const groupId = typeof params.groupId === "string" ? params.groupId : null;
   const [selectedScene, setSelectedScene] = useState<string | null>(null);
   const [customScene, setCustomScene] = useState("");
+  const [scenes, setScenes] = useState<{ id: string; title: string }[]>(
+    [],
+  );
+  const [isLoadingScenes, setIsLoadingScenes] = useState(true);
+  const [sceneError, setSceneError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setIsLoadingScenes(true);
+        setSceneError(null);
+        console.log("[AdminScene] Fetching events for groupId:", groupId);
+
+        if (!groupId) {
+          console.warn("[AdminScene] No groupId provided");
+          setSceneError("グループ情報がありません");
+          setIsLoadingScenes(false);
+          return;
+        }
+
+        const res = await tryFetch(`/api/events/${groupId}`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const events = await res.json();
+        console.log("[AdminScene] Events fetched:", events);
+
+        const mappedScenes = events.map((event: any, idx: number) => ({
+          id: `event_${event.event_id || idx}`,
+          title: event.event_name,
+        }));
+        setScenes(mappedScenes);
+      } catch (err) {
+        console.error("[AdminScene] Error fetching events:", err);
+        setSceneError(
+          err instanceof Error ? err.message : "イベント取得エラー",
+        );
+        setScenes([]);
+      } finally {
+        setIsLoadingScenes(false);
+      }
+    })();
+  }, [groupId]);
 
   const handleNext = () => {
     if (!selectedScene) {
@@ -49,23 +90,39 @@ export default function AdminSceneScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {SCENES.map((scene) => {
-          const isActive = selectedScene === scene.title;
-          return (
-            <TouchableOpacity
-              key={scene.id}
-              style={[styles.card, isActive && styles.cardActive]}
-              onPress={() => setSelectedScene(scene.title)}
-              activeOpacity={0.85}
-            >
-              <Text
-                style={[styles.cardTitle, isActive && styles.cardTitleActive]}
+        {isLoadingScenes ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>イベントを読み込み中...</Text>
+          </View>
+        ) : sceneError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>エラー: {sceneError}</Text>
+          </View>
+        ) : scenes.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              このグループにはイベントが登録されていません
+            </Text>
+          </View>
+        ) : (
+          scenes.map((scene) => {
+            const isActive = selectedScene === scene.title;
+            return (
+              <TouchableOpacity
+                key={scene.id}
+                style={[styles.card, isActive && styles.cardActive]}
+                onPress={() => setSelectedScene(scene.title)}
+                activeOpacity={0.85}
               >
-                {scene.title}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+                <Text
+                  style={[styles.cardTitle, isActive && styles.cardTitleActive]}
+                >
+                  {scene.title}
+                </Text>
+              </TouchableOpacity>
+            );
+          })
+        )}
 
         <View style={styles.customRow}>
           <TextInput
@@ -243,5 +300,33 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
+  },
+  emptyContainer: {
+    paddingVertical: 60,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#999",
+    textAlign: "center",
+  },
+  loadingContainer: {
+    paddingVertical: 60,
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
+  },
+  errorContainer: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    backgroundColor: "#ffe5e5",
+    borderRadius: 12,
+    marginVertical: 20,
+  },
+  errorText: {
+    color: "#660000",
+    fontSize: 14,
   },
 });

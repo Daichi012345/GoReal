@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "./context/AuthContext";
 // @ts-ignore
 const SecureStore = require("expo-secure-store");
 
@@ -28,6 +29,7 @@ type Mission = {
 
 export default function AdminHomeScreen() {
   const router = useRouter();
+  const auth = useAuth();
   const params = useLocalSearchParams();
   const facilityName =
     typeof params.facilityName === "string"
@@ -68,6 +70,11 @@ export default function AdminHomeScreen() {
     );
   };
 
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.replace("/login");
+  };
+
   const generateGroupId = () => {
     const newId = `ADM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     setGroupId(newId);
@@ -94,6 +101,13 @@ export default function AdminHomeScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>管理者ホーム</Text>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.logoutButtonText}>ログアウト</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.infoRow}>
@@ -211,10 +225,26 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   backButton: { alignSelf: "flex-start", marginBottom: 8 },
   backButtonText: { color: "#000", fontSize: 14, fontWeight: "700" },
   title: { fontSize: 22, fontWeight: "900" },
+  logoutButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  logoutButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#333",
+  },
   infoRow: { paddingHorizontal: 20, paddingVertical: 16 },
   infoText: { fontSize: 14, color: "#333", marginBottom: 6 },
   cardPreview: { paddingHorizontal: 20, marginTop: 6 },
