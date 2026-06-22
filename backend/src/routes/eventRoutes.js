@@ -1,7 +1,12 @@
 const express = require("express");
 const router = express.Router();
 
-const { getEventsByGroup } = require("../controllers/eventController");
+const {
+  createEvent,
+  getEventsByGroup,
+} = require("../controllers/eventController");
+
+router.post("/", createEvent);
 
 router.get("/group/:groupId", getEventsByGroup);
 

@@ -1,5 +1,5 @@
 import * as Location from "expo-location";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   SafeAreaView,
@@ -11,6 +11,9 @@ import {
   View,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
+import { useAuth } from "./context/AuthContext";
+
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE;
 
 const fallbackRegion = {
   latitude: 34.7835,
@@ -103,6 +106,8 @@ async function fetchNearbyPlaces(
     method: "POST",
     headers: {
       "Content-Type": "text/plain;charset=UTF-8",
+      Accept: "application/json",
+      "User-Agent": "GoReal-Mobile/1.0",
     },
     body: query,
   });
@@ -166,6 +171,8 @@ function getPinColor(type: string) {
 
 export default function AdminMapScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const groupId = typeof params.groupId === "string" ? params.groupId : null;
   const [query, setQuery] = useState("");
   const [searchText, setSearchText] = useState("");
   const [currentLocation, setCurrentLocation] = useState(fallbackRegion);
@@ -174,6 +181,7 @@ export default function AdminMapScreen() {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [isLoadingPlaces, setIsLoadingPlaces] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const auth = useAuth();
 
   const loadPlaces = async (latitude: number, longitude: number, q: string) => {
     try {
@@ -237,9 +245,57 @@ export default function AdminMapScreen() {
     );
   };
 
-  const handlePlaceSelect = (place: any) => {
-    setSelectedPlaceId(place.id);
-    router.push(`/admin-scene?facilityName=${encodeURIComponent(place.name)}`);
+  const handlePlaceSelect = async (place: any) => {
+    try {
+      setSelectedPlaceId(place.id);
+
+      // まず既存グループ検索
+      const searchRes = await fetch(
+        `${API_BASE}/api/groups/search?group_name=${encodeURIComponent(
+          place.name,
+        )}`,
+      );
+
+      if (searchRes.ok) {
+        const group = await searchRes.json();
+
+        router.push(
+          `/admin-scene?groupId=${group.group_id}&facilityName=${encodeURIComponent(
+            place.name,
+          )}`,
+        );
+
+        return;
+      }
+
+      // なければ新規作成
+      const createRes = await fetch(`${API_BASE}/api/groups`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          group_name: place.name,
+          created_by: auth.user.user_id,
+        }),
+      });
+
+      const data = await createRes.json();
+
+      if (!createRes.ok) {
+        alert(data.message);
+        return;
+      }
+
+      router.push(
+        `/admin-scene?groupId=${data.group_id}&facilityName=${encodeURIComponent(
+          place.name,
+        )}`,
+      );
+    } catch (err) {
+      console.error(err);
+      alert("グループ取得失敗");
+    }
   };
 
   const filteredPlaces = useMemo(() => {
@@ -357,11 +413,7 @@ export default function AdminMapScreen() {
               key={place.id}
               style={styles.placeCard}
               activeOpacity={0.8}
-              onPress={() =>
-                router.push(
-                  `/admin-scene?facilityName=${encodeURIComponent(place.name)}`,
-                )
-              }
+              onPress={() => handlePlaceSelect(place)}
             >
               <View style={styles.placeHeader}>
                 <View>
