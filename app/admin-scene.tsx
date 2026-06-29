@@ -91,7 +91,15 @@ export default function AdminSceneScreen() {
   const handleNext = () => {
     if (!selectedEvent) return;
 
-    router.push(`/admin-scene-confirm?eventId=${selectedEvent}`);
+    const event = events.find((e) => e.event_id === selectedEvent);
+
+    router.push(
+      `/admin-scene-confirm?facilityName=${encodeURIComponent(
+        facilityName,
+      )}&scene=${encodeURIComponent(
+        event?.event_name ?? "",
+      )}&eventId=${selectedEvent}`,
+    );
   };
 
   return (

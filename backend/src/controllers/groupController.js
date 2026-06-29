@@ -11,6 +11,33 @@ const createGroup = async (req, res) => {
       });
     }
 
+    // ==========================
+    // 同じ施設名のグループがあるか確認
+    // ==========================
+    const [existGroups] = await db.promise().query(
+      `
+      SELECT
+        group_id,
+        group_code
+      FROM community_groups
+      WHERE group_name = ?
+      LIMIT 1
+      `,
+      [group_name],
+    );
+
+    // 既に存在する場合は新規作成しない
+    if (existGroups.length > 0) {
+      return res.status(200).json({
+        message: "既存グループ",
+        group_id: existGroups[0].group_id,
+        group_code: existGroups[0].group_code,
+      });
+    }
+
+    // ==========================
+    // 新規グループ作成
+    // ==========================
     const groupCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const [result] = await db.promise().query(
