@@ -246,7 +246,7 @@ CREATE TABLE events (
 
     group_id INT NOT NULL,
 
-    event_name VARCHAR(100) NOT NULL,
+    event_name VARCHAR(100) NOT NULL UNIQUE,
 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 

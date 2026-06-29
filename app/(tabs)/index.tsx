@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Platform,
@@ -8,10 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
+import { useAuth } from "../context/AuthContext";
 import tryFetch from "../lib/api";
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const auth = useAuth();
   // ✅ 配列として持つ
   const [mission, setMission] = useState<any[]>([]);
 
@@ -36,9 +39,23 @@ export default function HomeScreen() {
   // ✅ 1件目を安全に取り出す
   const current = mission?.[0];
 
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.replace("/login");
+  };
+
   return (
     <SafeAreaView style={styles.page}>
-      <Text style={styles.header}>HOME</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>HOME</Text>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.logoutButtonText}>ログアウト</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.cardContainer}>
         <Text style={styles.cardTitle}>カテゴリー:文化祭{"\n"}MISSION</Text>
@@ -86,11 +103,33 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 20 : 12,
   },
 
-  header: {
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
     paddingTop: 8,
-    paddingLeft: 20,
+    paddingBottom: 8,
+  },
+
+  header: {
     fontWeight: "800",
     fontSize: 18,
+  },
+
+  logoutButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+
+  logoutButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#333",
   },
 
   cardContainer: {

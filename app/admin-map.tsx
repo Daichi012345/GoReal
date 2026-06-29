@@ -1,16 +1,19 @@
 import * as Location from "expo-location";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
+import { useAuth } from "./context/AuthContext";
+
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE;
 
 const fallbackRegion = {
   latitude: 34.7835,
@@ -98,14 +101,34 @@ async function fetchNearbyPlaces(
 
   const query = `[out:json][timeout:25];\n(\n  node["amenity"="school"](around:5000,${latitude},${longitude});\n  way["amenity"="school"](around:5000,${latitude},${longitude});\n  relation["amenity"="school"](around:5000,${latitude},${longitude});\n  node["amenity"="university"](around:5000,${latitude},${longitude});\n  way["amenity"="university"](around:5000,${latitude},${longitude});\n  relation["amenity"="university"](around:5000,${latitude},${longitude});\n  node["amenity"="college"](around:5000,${latitude},${longitude});\n  way["amenity"="college"](around:5000,${latitude},${longitude});\n  relation["amenity"="college"](around:5000,${latitude},${longitude});\n  node["building"="office"](around:5000,${latitude},${longitude});\n  way["building"="office"](around:5000,${latitude},${longitude});\n  relation["building"="office"](around:5000,${latitude},${longitude});\n  node["office"](around:5000,${latitude},${longitude});\n  way["office"](around:5000,${latitude},${longitude});\n  relation["office"](around:5000,${latitude},${longitude});\n  node["amenity"="theatre"](around:5000,${latitude},${longitude});\n  way["amenity"="theatre"](around:5000,${latitude},${longitude});\n  relation["amenity"="theatre"](around:5000,${latitude},${longitude});\n  node["amenity"="concert_hall"](around:5000,${latitude},${longitude});\n  way["amenity"="concert_hall"](around:5000,${latitude},${longitude});\n  relation["amenity"="concert_hall"](around:5000,${latitude},${longitude});\n  node["leisure"="stadium"](around:5000,${latitude},${longitude});\n  way["leisure"="stadium"](around:5000,${latitude},${longitude});\n  relation["leisure"="stadium"](around:5000,${latitude},${longitude});\n  node["amenity"="community_centre"](around:5000,${latitude},${longitude});\n  way["amenity"="community_centre"](around:5000,${latitude},${longitude});\n  relation["amenity"="community_centre"](around:5000,${latitude},${longitude});\n  node["amenity"="library"](around:5000,${latitude},${longitude});\n  way["amenity"="library"](around:5000,${latitude},${longitude});\n  relation["amenity"="library"](around:5000,${latitude},${longitude});\n  node["shop"="mall"](around:5000,${latitude},${longitude});\n  way["shop"="mall"](around:5000,${latitude},${longitude});\n  relation["shop"="mall"](around:5000,${latitude},${longitude});\n  ${searchFilter}\n);\nout center 30;`;
 
+  console.log("[Overpass] Sending query...");
   const response = await fetch("https://overpass-api.de/api/interpreter", {
     method: "POST",
     headers: {
       "Content-Type": "text/plain;charset=UTF-8",
+      Accept: "application/json",
+      "User-Agent": "GoReal-Mobile/1.0",
     },
     body: query,
   });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error("[Overpass] API Error:", response.status, text);
+    throw new Error(`Overpass API Error: ${response.status}`);
+  }
+
   const json = await response.json();
+  console.log(
+    "[Overpass] Response received, elements:",
+    json.elements?.length || 0,
+  );
+
+  if (!json.elements || json.elements.length === 0) {
+    console.warn("[Overpass] No elements in response");
+    return [];
+  }
+
   const places = json.elements
     .map((item: any) => {
       const latitude = item.lat ?? item.center?.lat;
@@ -148,6 +171,8 @@ function getPinColor(type: string) {
 
 export default function AdminMapScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const groupId = typeof params.groupId === "string" ? params.groupId : null;
   const [query, setQuery] = useState("");
   const [searchText, setSearchText] = useState("");
   const [currentLocation, setCurrentLocation] = useState(fallbackRegion);
@@ -155,13 +180,20 @@ export default function AdminMapScreen() {
   const [nearbyPlaces, setNearbyPlaces] = useState<any[]>([]);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [isLoadingPlaces, setIsLoadingPlaces] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const auth = useAuth();
 
   const loadPlaces = async (latitude: number, longitude: number, q: string) => {
     try {
       setIsLoadingPlaces(true);
+      setLoadError(null);
+      console.log("[AdminMap] Fetching places:", { latitude, longitude, q });
       const places = await fetchNearbyPlaces(latitude, longitude, q);
+      console.log("[AdminMap] Places fetched:", places.length);
       setNearbyPlaces(places);
     } catch (error) {
+      console.error("[AdminMap] Error loading places:", error);
+      setLoadError(error instanceof Error ? error.message : String(error));
       setNearbyPlaces([]);
     } finally {
       setIsLoadingPlaces(false);
@@ -172,21 +204,35 @@ export default function AdminMapScreen() {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
+        console.warn("[AdminMap] Location permission denied");
         setHasLocationPermission(false);
+        setLoadError("位置情報の許可が必要です");
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
-      const newLocation = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      };
-      setCurrentLocation(newLocation);
-      await loadPlaces(newLocation.latitude, newLocation.longitude, searchText);
+      try {
+        console.log("[AdminMap] Getting current location...");
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Highest,
+        });
+        console.log("[AdminMap] Location received:", location.coords);
+        const newLocation = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        };
+        setCurrentLocation(newLocation);
+        await loadPlaces(
+          newLocation.latitude,
+          newLocation.longitude,
+          searchText,
+        );
+      } catch (err) {
+        console.error("[AdminMap] Error getting location:", err);
+        setLoadError(err instanceof Error ? err.message : "位置情報取得エラー");
+        setHasLocationPermission(false);
+      }
     })();
   }, []);
 
@@ -199,9 +245,57 @@ export default function AdminMapScreen() {
     );
   };
 
-  const handlePlaceSelect = (place: any) => {
-    setSelectedPlaceId(place.id);
-    router.push(`/admin-scene?facilityName=${encodeURIComponent(place.name)}`);
+  const handlePlaceSelect = async (place: any) => {
+    try {
+      setSelectedPlaceId(place.id);
+
+      // まず既存グループ検索
+      const searchRes = await fetch(
+        `${API_BASE}/api/groups/search?group_name=${encodeURIComponent(
+          place.name,
+        )}`,
+      );
+
+      if (searchRes.ok) {
+        const group = await searchRes.json();
+
+        router.push(
+          `/admin-scene?groupId=${group.group_id}&facilityName=${encodeURIComponent(
+            place.name,
+          )}`,
+        );
+
+        return;
+      }
+
+      // なければ新規作成
+      const createRes = await fetch(`${API_BASE}/api/groups`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          group_name: place.name,
+          created_by: auth.user.user_id,
+        }),
+      });
+
+      const data = await createRes.json();
+
+      if (!createRes.ok) {
+        alert(data.message);
+        return;
+      }
+
+      router.push(
+        `/admin-scene?groupId=${data.group_id}&facilityName=${encodeURIComponent(
+          place.name,
+        )}`,
+      );
+    } catch (err) {
+      console.error(err);
+      alert("グループ取得失敗");
+    }
   };
 
   const filteredPlaces = useMemo(() => {
@@ -296,6 +390,12 @@ export default function AdminMapScreen() {
         </View>
       )}
 
+      {loadError && (
+        <View style={styles.errorNotice}>
+          <Text style={styles.errorText}>エラー: {loadError}</Text>
+        </View>
+      )}
+
       <ScrollView contentContainerStyle={styles.listContainer}>
         {isLoadingPlaces ? (
           <View style={styles.loadingNotice}>
@@ -303,7 +403,9 @@ export default function AdminMapScreen() {
           </View>
         ) : filteredPlaces.length === 0 ? (
           <Text style={styles.emptyText}>
-            周辺の実際の施設が見つかりませんでした。
+            {loadError
+              ? "施設の取得に失敗しました。ネットワーク接続を確認してください。"
+              : "周辺の実際の施設が見つかりませんでした。"}
           </Text>
         ) : (
           filteredPlaces.map((place) => (
@@ -311,11 +413,7 @@ export default function AdminMapScreen() {
               key={place.id}
               style={styles.placeCard}
               activeOpacity={0.8}
-              onPress={() =>
-                router.push(
-                  `/admin-scene?facilityName=${encodeURIComponent(place.name)}`,
-                )
-              }
+              onPress={() => handlePlaceSelect(place)}
             >
               <View style={styles.placeHeader}>
                 <View>
@@ -415,6 +513,19 @@ const styles = StyleSheet.create({
   },
   permissionText: {
     color: "#66500d",
+    fontSize: 14,
+  },
+  errorNotice: {
+    marginHorizontal: 20,
+    padding: 12,
+    backgroundColor: "#ffe5e5",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#ff9999",
+    marginBottom: 10,
+  },
+  errorText: {
+    color: "#660000",
     fontSize: 14,
   },
   listContainer: {

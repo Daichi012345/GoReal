@@ -10,8 +10,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import { useAuth } from "./context/AuthContext";
+import tryFetch from "./lib/api";
 // @ts-ignore
 const SecureStore = require("expo-secure-store");
 
@@ -28,6 +30,7 @@ type Mission = {
 
 export default function AdminHomeScreen() {
   const router = useRouter();
+  const auth = useAuth();
   const params = useLocalSearchParams();
   const facilityName =
     typeof params.facilityName === "string"
@@ -40,6 +43,8 @@ export default function AdminHomeScreen() {
   const [joinCode, setJoinCode] = useState("");
   const [joinStatus, setJoinStatus] = useState<string | null>(null);
   const [missions, setMissions] = useState<Mission[]>([]);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [isJoiningGroup, setIsJoiningGroup] = useState(false);
 
   const loadMissions = async () => {
     try {
@@ -68,22 +73,85 @@ export default function AdminHomeScreen() {
     );
   };
 
-  const generateGroupId = () => {
-    const newId = `ADM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-    setGroupId(newId);
-    setJoinStatus("グループIDを発行しました。参加者に共有してください。");
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.replace("/login");
   };
 
-  const handleJoinGroup = () => {
-    const code = joinCode.trim();
-    if (!code) {
-      setJoinStatus("参加コードを入力してください。");
-      return;
+  const generateGroupId = async () => {
+    try {
+      setIsCreatingGroup(true);
+      setJoinStatus(null);
+
+      // グループコード生成
+      const groupCode = `ADM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+      const groupName = `管理者グループ-${new Date().toLocaleDateString()}`;
+
+      console.log("[AdminHome] Creating group:", { groupName, groupCode });
+
+      const res = await tryFetch("/api/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ group_name: groupName, group_code: groupCode }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        setJoinStatus(`エラー: ${error.message}`);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("[AdminHome] Group created:", data);
+
+      setGroupId(data.group_code);
+      setJoinStatus("✅ グループを作成しました。参加者に共有してください。");
+    } catch (err) {
+      console.error("[AdminHome] Error creating group:", err);
+      setJoinStatus(
+        `エラー: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setIsCreatingGroup(false);
     }
-    if (groupId && code === groupId) {
-      setJoinStatus("管理者グループに参加しました。");
-    } else {
-      setJoinStatus(`参加コード「${code}」を入力しました。`);
+  };
+
+  const handleJoinGroup = async () => {
+    try {
+      const code = joinCode.trim();
+      if (!code) {
+        setJoinStatus("参加コードを入力してください。");
+        return;
+      }
+
+      setIsJoiningGroup(true);
+      console.log("[AdminHome] Joining group:", { group_code: code });
+
+      const res = await tryFetch("/api/groups/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ group_code: code }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        setJoinStatus(`エラー: ${error.message}`);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("[AdminHome] Joined group:", data);
+
+      setJoinCode("");
+      setGroupId(code);
+      setJoinStatus("✅ グループに参加しました。");
+    } catch (err) {
+      console.error("[AdminHome] Error joining group:", err);
+      setJoinStatus(
+        `エラー: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setIsJoiningGroup(false);
     }
   };
 
@@ -94,6 +162,13 @@ export default function AdminHomeScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>管理者ホーム</Text>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.logoutButtonText}>ログアウト</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.infoRow}>
@@ -104,11 +179,17 @@ export default function AdminHomeScreen() {
         <View style={styles.groupSection}>
           <Text style={styles.sectionTitle}>管理者グループ</Text>
           <TouchableOpacity
-            style={styles.groupButton}
+            style={[
+              styles.groupButton,
+              isCreatingGroup && styles.groupButtonDisabled,
+            ]}
             onPress={generateGroupId}
             activeOpacity={0.85}
+            disabled={isCreatingGroup}
           >
-            <Text style={styles.groupButtonText}>グループIDを発行</Text>
+            <Text style={styles.groupButtonText}>
+              {isCreatingGroup ? "作成中..." : "グループIDを発行"}
+            </Text>
           </TouchableOpacity>
           {groupId ? (
             <View style={styles.groupCard}>
@@ -125,11 +206,17 @@ export default function AdminHomeScreen() {
             autoCapitalize="characters"
           />
           <TouchableOpacity
-            style={styles.groupButtonSecondary}
+            style={[
+              styles.groupButtonSecondary,
+              isJoiningGroup && styles.groupButtonDisabled,
+            ]}
             onPress={handleJoinGroup}
             activeOpacity={0.85}
+            disabled={isJoiningGroup}
           >
-            <Text style={styles.groupButtonText}>参加する</Text>
+            <Text style={styles.groupButtonText}>
+              {isJoiningGroup ? "参加中..." : "参加する"}
+            </Text>
           </TouchableOpacity>
           {joinStatus ? (
             <Text style={styles.joinStatus}>{joinStatus}</Text>
@@ -211,10 +298,26 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   backButton: { alignSelf: "flex-start", marginBottom: 8 },
   backButtonText: { color: "#000", fontSize: 14, fontWeight: "700" },
   title: { fontSize: 22, fontWeight: "900" },
+  logoutButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  logoutButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#333",
+  },
   infoRow: { paddingHorizontal: 20, paddingVertical: 16 },
   infoText: { fontSize: 14, color: "#333", marginBottom: 6 },
   cardPreview: { paddingHorizontal: 20, marginTop: 6 },
@@ -243,6 +346,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 12,
     marginTop: 8,
+  },
+  groupButtonDisabled: {
+    backgroundColor: "#ccc",
+    opacity: 0.6,
   },
   groupButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   groupCard: {
