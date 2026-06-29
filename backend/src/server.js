@@ -8,6 +8,8 @@ const friendRequestRoutes = require("./routes/friendRequestRoutes");
 const mypageRoutes = require("./routes/mypageRoutes");
 const missionRoutes = require("./routes/missionRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const eventRoutes = require("./routes/eventRoutes");
+const groupRoutes = require("./routes/groupRoutes");
 
 const app = express();
 
@@ -25,6 +27,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/mypage", mypageRoutes);
 app.use("/api/friends", friendRoutes);
 app.use("/api/friend-requests", friendRequestRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api/groups", groupRoutes);
 
 app.listen(3000, () => {
   console.log("起動");
