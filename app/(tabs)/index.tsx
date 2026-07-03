@@ -1,6 +1,8 @@
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Platform,
   SafeAreaView,
   StatusBar,
@@ -42,6 +44,47 @@ export default function HomeScreen() {
   const handleLogout = async () => {
     await auth.signOut();
     router.replace("/login");
+  };
+
+  const handleStartMission = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert("カメラ許可が必要です", "ミッションを開始するにはカメラアクセスを許可してください。");
+        return;
+      }
+      console.log("current mission:", current);
+      console.log("missionId to send:", current?.mission_id?.toString());
+
+      const pickerResult = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        quality: 0.8,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
+
+      const didCancel = (pickerResult as any).cancelled || (pickerResult as any).canceled;
+      const imageUri =
+        (pickerResult as any).uri ||
+        pickerResult.assets?.[0]?.uri ||
+        (pickerResult as any).assets?.[0]?.uri;
+
+      if (didCancel || !imageUri) {
+        return;
+      }
+
+      if (!current?.mission_id) {
+        Alert.alert("ミッションが読み込まれていません", "ミッション情報を取得してから再度お試しください。");
+        return;
+      }
+
+      router.push({
+        pathname: "/mission-submit",
+        params: { imageUri, missionId: current.mission_id.toString() },
+      });
+    } catch (error) {
+      console.error(error);
+      Alert.alert("カメラ起動に失敗しました", "もう一度お試しください。");
+    }
   };
 
   return (
@@ -88,7 +131,7 @@ export default function HomeScreen() {
         </View>
 
         {/* ボタン */}
-        <TouchableOpacity style={styles.startButton} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.startButton} activeOpacity={0.85} onPress={handleStartMission}>
           <Text style={styles.startButtonText}>START MISSION ›</Text>
         </TouchableOpacity>
       </View>
