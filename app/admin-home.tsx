@@ -10,7 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { useAuth } from "./context/AuthContext";
 import tryFetch from "./lib/api";
@@ -21,6 +21,7 @@ const MISSION_STORE_KEY = "adminMissions";
 
 type Mission = {
   id: string;
+  eventId: string; // ←追加
   facilityName: string;
   scene: string;
   text: string;
@@ -32,6 +33,7 @@ export default function AdminHomeScreen() {
   const router = useRouter();
   const auth = useAuth();
   const params = useLocalSearchParams();
+  const eventId = typeof params.eventId === "string" ? params.eventId : "";
   const facilityName =
     typeof params.facilityName === "string"
       ? params.facilityName
@@ -56,6 +58,10 @@ export default function AdminHomeScreen() {
     }
   };
 
+  const filteredMissions = missions.filter(
+    (mission) => mission.eventId === eventId,
+  );
+
   useEffect(() => {
     loadMissions();
   }, []);
@@ -67,9 +73,10 @@ export default function AdminHomeScreen() {
   );
 
   const handleCreate = () => {
-    // Pass through facility and scene to the create screen
     router.push(
-      `/admin-create-mission?facilityName=${encodeURIComponent(facilityName)}&scene=${encodeURIComponent(scene)}`,
+      `/admin-create-mission?facilityName=${encodeURIComponent(
+        facilityName,
+      )}&scene=${encodeURIComponent(scene)}&eventId=${eventId}`,
     );
   };
 
@@ -242,7 +249,7 @@ export default function AdminHomeScreen() {
               </Text>
             </View>
           ) : (
-            missions.map((mission) => (
+            filteredMissions.map((mission) => (
               <View key={mission.id} style={styles.missionCard}>
                 <View style={styles.missionHeaderRow}>
                   <Text style={styles.missionMeta}>
