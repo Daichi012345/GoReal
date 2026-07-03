@@ -1,13 +1,13 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 // @ts-ignore
 const SecureStore = require("expo-secure-store");
@@ -24,18 +24,18 @@ type Mission = {
   status?: string;
 };
 
-const params = useLocalSearchParams();
-
-const eventId = typeof params.eventId === "string" ? params.eventId : "";
-
-const filteredMissions = missions.filter(
-  (mission) => mission.eventId === eventId,
-);
-
 export default function AdminMissionReviewScreen() {
   const router = useRouter();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const params = useLocalSearchParams();
+
+  const eventId = typeof params.eventId === "string" ? params.eventId : "";
+
+  const filteredMissions = missions.filter(
+    (mission) => mission.eventId === eventId,
+  );
 
   const loadMissions = async () => {
     try {
@@ -119,7 +119,7 @@ export default function AdminMissionReviewScreen() {
           </View>
         ) : (
           <FlatList
-            data={missions}
+            data={filteredMissions}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}

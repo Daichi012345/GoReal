@@ -20,13 +20,12 @@ const SecureStore = require("expo-secure-store");
 const MISSION_STORE_KEY = "adminMissions";
 
 type Mission = {
-  id: string;
-  eventId: string; // ←追加
-  facilityName: string;
-  scene: string;
-  text: string;
-  createdAt: string;
-  status?: string;
+  mission_id: number;
+  event_id: number;
+  mission_title: string;
+  mission_detail: string;
+  reward_exp: number;
+  created_at: string;
 };
 
 export default function AdminHomeScreen() {
@@ -50,17 +49,25 @@ export default function AdminHomeScreen() {
 
   const loadMissions = async () => {
     try {
-      const stored = await SecureStore.getItemAsync(MISSION_STORE_KEY);
-      const parsed = stored ? (JSON.parse(stored) as Mission[]) : [];
-      setMissions(parsed);
-    } catch (error) {
-      console.warn("Failed to load missions", error);
+      console.log("loadMissions");
+
+      const res = await tryFetch("/api/missions");
+      console.log("status", res.status);
+
+      const data = await res.json();
+      console.log(data);
+
+      setMissions(data);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   const filteredMissions = missions.filter(
-    (mission) => mission.eventId === eventId,
+    (mission) => mission.event_id === Number(eventId),
   );
+  console.log("missions", missions);
+  console.log("filtered", filteredMissions);
 
   useEffect(() => {
     loadMissions();
@@ -73,6 +80,10 @@ export default function AdminHomeScreen() {
   );
 
   const handleCreate = () => {
+    console.log("eventId =", eventId);
+    console.log("missions =", missions);
+    console.log("filtered =", filteredMissions);
+
     router.push(
       `/admin-create-mission?facilityName=${encodeURIComponent(
         facilityName,
@@ -242,7 +253,8 @@ export default function AdminHomeScreen() {
 
         <View style={styles.missionSection}>
           <Text style={styles.sectionTitle}>作成済みミッション</Text>
-          {missions.length === 0 ? (
+
+          {filteredMissions.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
                 まだミッションがありません。作成するとここに表示されます。
@@ -250,26 +262,22 @@ export default function AdminHomeScreen() {
             </View>
           ) : (
             filteredMissions.map((mission) => (
-              <View key={mission.id} style={styles.missionCard}>
+              <View key={mission.mission_id} style={styles.missionCard}>
                 <View style={styles.missionHeaderRow}>
                   <Text style={styles.missionMeta}>
-                    {mission.facilityName} • {mission.scene}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.missionStatus,
-                      mission.status === "達成"
-                        ? styles.statusSuccess
-                        : mission.status === "未達成"
-                          ? styles.statusFailed
-                          : styles.statusPending,
-                    ]}
-                  >
-                    {mission.status || "未確認"}
+                    ミッションID：{mission.mission_id}
                   </Text>
                 </View>
-                <Text style={styles.missionText}>{mission.text}</Text>
-                <Text style={styles.missionDate}>{mission.createdAt}</Text>
+
+                <Text style={styles.missionMeta}>
+                  タイトル：{mission.mission_title}
+                </Text>
+
+                <Text style={styles.missionText}>{mission.mission_detail}</Text>
+
+                <Text style={styles.missionDate}>
+                  EXP：{mission.reward_exp}
+                </Text>
               </View>
             ))
           )}
