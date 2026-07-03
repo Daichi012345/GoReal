@@ -17,6 +17,7 @@ export default function AdminSceneConfirmScreen() {
       : "選択された施設";
   const scene =
     typeof params.scene === "string" ? params.scene : "選択されたシーン";
+  const eventId = typeof params.eventId === "string" ? params.eventId : "";
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -47,7 +48,7 @@ export default function AdminSceneConfirmScreen() {
             router.push(
               `/admin-home?facilityName=${encodeURIComponent(
                 facilityName,
-              )}&scene=${encodeURIComponent(scene)}`,
+              )}&scene=${encodeURIComponent(scene)}&eventId=${eventId}`,
             )
           }
           activeOpacity={0.85}

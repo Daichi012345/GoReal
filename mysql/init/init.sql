@@ -283,6 +283,7 @@ CREATE TABLE missions (
     CONSTRAINT fk_mission_event
     FOREIGN KEY (event_id)
     REFERENCES events(event_id)
+    ON DELETE CASCADE
 
 );
 

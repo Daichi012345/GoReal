@@ -7,7 +7,7 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from "react-native";
 // @ts-ignore
 const SecureStore = require("expo-secure-store");
@@ -16,12 +16,21 @@ const MISSION_STORE_KEY = "adminMissions";
 
 type Mission = {
   id: string;
+  eventId: string; // ←追加
   facilityName: string;
   scene: string;
   text: string;
   createdAt: string;
   status?: string;
 };
+
+const params = useLocalSearchParams();
+
+const eventId = typeof params.eventId === "string" ? params.eventId : "";
+
+const filteredMissions = missions.filter(
+  (mission) => mission.eventId === eventId,
+);
 
 export default function AdminMissionReviewScreen() {
   const router = useRouter();
