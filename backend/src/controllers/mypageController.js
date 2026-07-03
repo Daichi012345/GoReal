@@ -25,6 +25,16 @@ const formatUser = (req, user) => ({
   icon_image: user.icon_image ? `${req.protocol}://${req.get('host')}${user.icon_image}` : null,
 });
 
+const formatSubmission = (req, row) => ({
+  submission_id: row.submission_id,
+  mission_id: row.mission_id,
+  mission_title: row.mission_title,
+  comment: row.comment,
+  status: row.status,
+  submitted_at: row.submitted_at,
+  photo_url: row.photo_path ? `${req.protocol}://${req.get('host')}${row.photo_path}` : null,
+});
+
 // GET /api/mypage
 const getProfile = async (req, res) => {
   try {
@@ -35,6 +45,54 @@ const getProfile = async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: 'ユーザーが見つかりません' });
 
     return res.status(200).json({ user: formatUser(req, rows[0]) });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'サーバーエラー' });
+  }
+};
+
+const getHistory = async (req, res) => {
+  try {
+    const userId = req.user && req.user.user_id;
+    if (!userId) return res.status(401).json({ message: 'ユーザー未認証' });
+
+    const [rows] = await db.promise().query(
+      `SELECT ms.submission_id, ms.mission_id, ms.comment, ms.photo_path, ms.submitted_at, ms.status, m.mission_title
+       FROM mission_submissions ms
+       LEFT JOIN missions m ON ms.mission_id = m.mission_id
+       WHERE ms.user_id = ?
+       ORDER BY ms.submitted_at DESC`,
+      [userId],
+    );
+
+    return res.status(200).json({ history: rows.map((row) => formatSubmission(req, row)) });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'サーバーエラー' });
+  }
+};
+
+const getHistoryById = async (req, res) => {
+  try {
+    const userId = req.user && req.user.user_id;
+    if (!userId) return res.status(401).json({ message: 'ユーザー未認証' });
+
+    const submissionId = Number(req.params.submissionId);
+    if (!submissionId) return res.status(400).json({ message: 'submissionId が必要です' });
+
+    const [rows] = await db.promise().query(
+      `SELECT ms.submission_id, ms.mission_id, ms.comment, ms.photo_path, ms.submitted_at, ms.status, m.mission_title
+       FROM mission_submissions ms
+       LEFT JOIN missions m ON ms.mission_id = m.mission_id
+       WHERE ms.submission_id = ? AND ms.user_id = ?`,
+      [submissionId, userId],
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: '履歴が見つかりません' });
+    }
+
+    return res.status(200).json({ history: formatSubmission(req, rows[0]) });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'サーバーエラー' });
@@ -86,4 +144,6 @@ module.exports = {
   updateProfile,
   updateAvatar,
   uploadAvatar,
+  getHistory,
+  getHistoryById,
 };

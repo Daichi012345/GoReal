@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useFriends } from '../context/friends';
 import { useProfile } from '../context/profile';
-import { historyData } from '../data/history';
+import tryFetch from '../lib/api';
 
 const settingsImg = require('@/assets/images/seting.png');
 const friendsImg = require('@/assets/images/frend.png');
@@ -21,6 +21,8 @@ export default function MyPageScreen() {
   const { profile, nextAvatar, setProfile } = useProfile();
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -46,6 +48,21 @@ export default function MyPageScreen() {
         console.warn('mypage fetch failed', e);
       } finally {
         setLoadingProfile(false);
+      }
+    })();
+
+    (async () => {
+      setLoadingHistory(true);
+      try {
+        const res = await tryFetch('/api/mypage/history');
+        if (res.ok) {
+          const data: any = await res.json();
+          setHistory(data.history || []);
+        }
+      } catch (e) {
+        console.warn('history fetch failed', e);
+      } finally {
+        setLoadingHistory(false);
       }
     })();
   }, [router, auth.isFirstLogin]);
@@ -151,16 +168,22 @@ export default function MyPageScreen() {
 
           <View style={styles.sectionLarge}>
               <ThemedText type="subtitle" style={{ color: '#111827' }}>履歴</ThemedText>
-            {historyData.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.beRealCard} onPress={() => router.push({ pathname: '/history/[id]', params: { id: item.id } })}>
-                <Image source={item.image} style={styles.beRealImage} />
-                <View style={styles.beRealMeta}>
-                  <ThemedText type="defaultSemiBold" style={{ color: '#111827', marginBottom: 6 }}>{item.caption}</ThemedText>
-                  <ThemedText type="default" style={{ color: '#6b7280' }}>{item.location}</ThemedText>
-                  <ThemedText type="default" style={styles.dateText}>{item.date}</ThemedText>
-                </View>
-              </TouchableOpacity>
-            ))}
+            {loadingHistory ? (
+              <ThemedText type="default" style={{ color: '#6b7280', marginTop: 12 }}>読み込み中...</ThemedText>
+            ) : history.length === 0 ? (
+              <ThemedText type="default" style={{ color: '#6b7280', marginTop: 12 }}>投稿された履歴がありません</ThemedText>
+            ) : (
+              history.map((item) => (
+                <TouchableOpacity key={item.submission_id} style={styles.beRealCard} onPress={() => router.push({ pathname: '/history/[id]', params: { id: item.submission_id.toString() } })}>
+                  <Image source={{ uri: item.photo_url }} style={styles.beRealImage} />
+                  <View style={styles.beRealMeta}>
+                    <ThemedText type="defaultSemiBold" style={{ color: '#111827', marginBottom: 6 }}>{item.mission_title || 'ミッション投稿'}</ThemedText>
+                    <ThemedText type="default" style={{ color: '#6b7280' }}>{item.comment || 'コメントなし'}</ThemedText>
+                    <ThemedText type="default" style={styles.dateText}>{item.submitted_at ? new Date(item.submitted_at).toLocaleDateString() : ''}</ThemedText>
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
           </View>
 
           <View style={styles.sectionLarge}>

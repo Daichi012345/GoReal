@@ -2,13 +2,13 @@ import React, { useEffect, useState } from "react";
 import {
   Modal,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import tryFetch from "../lib/api";
@@ -61,31 +61,54 @@ export default function CommunityScreen() {
       }
 
       setNotifications(
-        data.notifications.map((item: any) => ({
-          id: item.id,
-          title:
-            item.type === 'friend_request'
-              ? 'フレンド申請'
-              : item.type === 'friend_request_accepted'
-              ? '申請承認'
-              : item.type === 'friend_added'
-              ? 'フレンド追加'
-              : item.type,
-          body:
-            item.type === 'friend_request'
-              ? item.payload?.actor_name
-                ? `${item.payload.actor_name}さんがフレンド申請しました`
-                : 'フレンド申請を受け取りました'
-              : item.type === 'friend_request_accepted'
-              ? item.payload?.actor_name
-                ? `${item.payload.actor_name}さんが申請を承認しました`
-                : 'フレンド申請が承認されました'
-              : item.payload?.actor_name
-              ? `${item.payload.actor_name}さんがフレンドになりました`
-              : item.body || '',
-          time: item.created_at ? item.created_at.replace('T', ' ') : '',
-          is_read: Boolean(item.is_read),
-        })),
+        data.notifications.map((item: any) => {
+          const actorName = item.payload?.actor_name || item.actor?.name || null;
+          const actorLabel = actorName ? `${actorName}さん` : null;
+          let title = item.type;
+          let body = item.body || '';
+
+          if (item.type === 'friend_request') {
+            title = 'フレンド申請';
+            body = actorLabel
+              ? `${actorLabel}がフレンド申請しました`
+              : 'フレンド申請を受け取りました';
+          } else if (item.type === 'friend_request_accepted') {
+            title = '申請承認';
+            body = actorLabel
+              ? `${actorLabel}が申請を承認しました`
+              : 'フレンド申請が承認されました';
+          } else if (item.type === 'friend_added') {
+            title = 'フレンド追加';
+            body = actorLabel
+              ? `${actorLabel}がフレンドになりました`
+              : item.body || '';
+          } else if (item.type === 'comment') {
+            title = 'コメント';
+            const commentText = item.payload?.comment_text || item.payload?.text || item.body;
+            body = actorLabel
+              ? commentText
+                ? `${actorLabel}が「${commentText}」とコメントしました`
+                : `${actorLabel}がコメントしました`
+              : commentText || 'コメントが届きました';
+          } else if (item.type === 'reaction') {
+            title = 'リアクション';
+            const reactionType = item.payload?.reaction || item.payload?.emoji || 'リアクション';
+            body = actorLabel
+              ? `${actorLabel}が${reactionType}しました`
+              : `${reactionType}が届きました`;
+          } else {
+            title = item.type || '通知';
+            body = item.body || item.payload?.message || '新しい通知があります';
+          }
+
+          return {
+            id: item.id,
+            title,
+            body,
+            time: item.created_at ? item.created_at.replace('T', ' ') : '',
+            is_read: Boolean(item.is_read),
+          };
+        }),
       );
     } catch (error: any) {
       console.warn('fetchNotifications error', error);
@@ -103,7 +126,7 @@ export default function CommunityScreen() {
   }, [showNotif]);
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView edges={["top"]} style={styles.screen}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>COMMUNITY</Text>
         <Pressable
@@ -118,7 +141,7 @@ export default function CommunityScreen() {
 
       <Modal visible={showNotif} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <SafeAreaView edges={["top"]} style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalTitle}>通知</Text>
@@ -152,7 +175,7 @@ export default function CommunityScreen() {
                 ))
               )}
             </ScrollView>
-          </View>
+          </SafeAreaView>
         </View>
       </Modal>
 
@@ -299,11 +322,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    maxHeight: '60%',
+    width: '100%',
+    maxHeight: '80%',
     backgroundColor: '#fff',
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
-    padding: 12,
+    paddingTop: 16,
+    paddingHorizontal: 12,
+    paddingBottom: 24,
   },
   modalHeader: {
     flexDirection: 'row',
