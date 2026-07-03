@@ -1,12 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 // @ts-ignore
 const SecureStore = require("expo-secure-store");
@@ -15,6 +15,7 @@ const MISSION_STORE_KEY = "adminMissions";
 
 type Mission = {
   id: string;
+  eventId: string; // ←追加
   facilityName: string;
   scene: string;
   text: string;
@@ -24,6 +25,7 @@ type Mission = {
 export default function AdminCreateMissionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const eventId = typeof params.eventId === "string" ? params.eventId : "";
   const facilityName =
     typeof params.facilityName === "string"
       ? params.facilityName
@@ -46,6 +48,7 @@ export default function AdminCreateMissionScreen() {
 
     const newMission: Mission = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      eventId,
       facilityName,
       scene,
       text,
