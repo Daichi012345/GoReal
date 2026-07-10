@@ -46,6 +46,9 @@ export default function FriendsScreen() {
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <ThemedText type="defaultSemiBold">戻る</ThemedText>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/friends-search')} style={styles.searchButton}>
+              <ThemedText type="defaultSemiBold" style={styles.searchButtonText}>検索</ThemedText>
+            </TouchableOpacity>
           </View>
 
           {incomingRequests.length > 0 && (
@@ -121,6 +124,9 @@ const styles = StyleSheet.create({
   content: { flex: 1, padding: 16 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   backButton: { minWidth: 44 },
+  headerTitle: { color: '#111827', flex: 1, textAlign: 'center' },
+  searchButton: { minWidth: 52, alignItems: 'center' },
+  searchButtonText: { color: '#2e8bff' },
   section: { flex: 1 },
   sectionTitle: { marginBottom: 10 },
   tabRow: { flexDirection: 'row', marginBottom: 12, gap: 8 },
