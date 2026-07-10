@@ -127,7 +127,7 @@ export default function MyPageScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.headerArea}>
             <View style={styles.headerIcons}>
-              <TouchableOpacity style={styles.iconCircle} accessibilityLabel="friends" onPress={() => router.push('/friends')}>
+              <TouchableOpacity style={styles.iconCircle} accessibilityLabel="friends" onPress={() => router.push('/friends-search')}>
                 <Image source={friendsImg} style={styles.friendsImage} />
               </TouchableOpacity>
               <TouchableOpacity
