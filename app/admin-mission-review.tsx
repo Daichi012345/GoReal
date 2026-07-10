@@ -26,15 +26,26 @@ type Mission = {
 
 export default function AdminMissionReviewScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ eventId?: string }>();
+  const eventId = typeof params.eventId === "string" ? params.eventId : "";
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const filteredMissions = missions.filter(
+    (mission) => eventId === "" || mission.eventId === eventId,
+  );
+
+<<<<<<< HEAD
   const params = useLocalSearchParams();
 
   const eventId = typeof params.eventId === "string" ? params.eventId : "";
 
   const filteredMissions = missions.filter(
     (mission) => mission.eventId === eventId,
+=======
+  const filteredMissions = missions.filter(
+    (mission) => eventId === "" || mission.eventId === eventId,
+>>>>>>> origin/feature/dai
   );
 
   const loadMissions = async () => {
@@ -111,7 +122,7 @@ export default function AdminMissionReviewScreen() {
       <View style={styles.body}>
         {loading ? (
           <Text style={styles.loadingText}>読み込み中...</Text>
-        ) : missions.length === 0 ? (
+        ) : filteredMissions.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>
               登録されたミッションがありません。
