@@ -162,6 +162,18 @@ export default function MyPageScreen() {
               <View style={styles.userBlock}>
                 {profile.name && <ThemedText type="title" style={styles.userName}>{profile.name}</ThemedText>}
                 {profile.handle && <ThemedText type="default" style={styles.userHandle}>{profile.handle}</ThemedText>}
+                <View style={styles.statsRow}>
+                  <TouchableOpacity style={styles.statButton} onPress={() => router.push('/friends')}>
+                    <ThemedText type="default" style={styles.statsText}>
+                      <ThemedText type="defaultSemiBold" style={styles.statsNumber}>{friends.length}</ThemedText> フォロー
+                    </ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.statButton} onPress={() => router.push('/friends')}>
+                    <ThemedText type="default" style={styles.statsText}>
+                      <ThemedText type="defaultSemiBold" style={styles.statsNumber}>{friends.length}</ThemedText> フォロワー
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
               </View>
             </TouchableOpacity>
           </View>
@@ -173,31 +185,23 @@ export default function MyPageScreen() {
             ) : history.length === 0 ? (
               <ThemedText type="default" style={{ color: '#6b7280', marginTop: 12 }}>投稿された履歴がありません</ThemedText>
             ) : (
-              history.map((item) => (
-                <TouchableOpacity key={item.submission_id} style={styles.beRealCard} onPress={() => router.push({ pathname: '/history/[id]', params: { id: item.submission_id.toString() } })}>
-                  <Image source={{ uri: item.photo_url }} style={styles.beRealImage} />
-                  <View style={styles.beRealMeta}>
-                    <ThemedText type="defaultSemiBold" style={{ color: '#111827', marginBottom: 6 }}>{item.mission_title || 'ミッション投稿'}</ThemedText>
-                    <ThemedText type="default" style={{ color: '#6b7280' }}>{item.comment || 'コメントなし'}</ThemedText>
-                    <ThemedText type="default" style={styles.dateText}>{item.submitted_at ? new Date(item.submitted_at).toLocaleDateString() : ''}</ThemedText>
-                  </View>
+              <>
+                {history.slice(0, 3).map((item) => (
+                      <TouchableOpacity key={item.submission_id} style={styles.beRealCard} onPress={() => router.push({ pathname: '/history' } as any)}>
+                    <Image source={{ uri: item.photo_url }} style={styles.beRealImage} />
+                    <View style={styles.beRealMeta}>
+                      <ThemedText type="defaultSemiBold" style={{ color: '#111827', marginBottom: 6 }}>{item.mission_title || 'ミッション投稿'}</ThemedText>
+                      <ThemedText type="default" style={{ color: '#6b7280' }} numberOfLines={2}>{item.comment || 'コメントなし'}</ThemedText>
+                      <ThemedText type="default" style={styles.dateText}>{item.submitted_at ? new Date(item.submitted_at).toLocaleDateString() : ''}</ThemedText>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity style={styles.viewAllButton} onPress={() => router.push({ pathname: '/history' } as any)}>
+                  <ThemedText type="defaultSemiBold" style={styles.viewAllText}>過去の履歴をすべて見る</ThemedText>
                 </TouchableOpacity>
-              ))
+              </> 
             )}
           </View>
-
-          <View style={styles.sectionLarge}>
-            <ThemedText type="subtitle" style={{ color: '#111827' }}>フレンド</ThemedText>
-            {friends.map((friend) => (
-              <View key={friend.id} style={styles.friendCard}>
-                <View>
-                  <ThemedText type="defaultSemiBold" style={{ color: '#111827' }}>{friend.name}</ThemedText>
-                  <ThemedText type="default" style={{ color: '#6b7280', marginTop: 4 }}>{friend.handle}</ThemedText>
-                </View>
-              </View>
-            ))}
-          </View>
-
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -220,6 +224,10 @@ const styles = StyleSheet.create({
   userBlock: { alignItems: 'center', marginTop: 12 },
   userName: { fontSize: 28, color: '#111827' },
   userHandle: { marginTop: 6, color: '#6b7280' },
+  statsRow: { flexDirection: 'row', marginTop: 10, gap: 16 },
+  statButton: { paddingVertical: 4 },
+  statsText: { color: '#6b7280' },
+  statsNumber: { color: '#111827' },
   shareButton: { marginTop: 14, alignSelf: 'center', backgroundColor: '#f3f4f6', paddingHorizontal: 22, paddingVertical: 12, borderRadius: 10 },
 
   sectionLarge: { marginTop: 20, paddingHorizontal: 4 },
@@ -227,5 +235,7 @@ const styles = StyleSheet.create({
   beRealImage: { width: 120, height: 120, borderRadius: 12, backgroundColor: '#e6e6e6' },
   beRealMeta: { flex: 1, paddingLeft: 12 },
   dateText: { marginTop: 6, color: '#9ca3af', fontSize: 12 },
+  viewAllButton: { marginTop: 14, paddingVertical: 12, borderRadius: 12, backgroundColor: '#eef2ff', alignItems: 'center', borderWidth: 1, borderColor: '#c7d2fe' },
+  viewAllText: { color: '#3730a3' },
   friendCard: { marginTop: 12, backgroundColor: '#fff', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#e6e6e6' },
 });
