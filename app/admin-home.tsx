@@ -1,8 +1,10 @@
 import { FooterTabs } from "@/components/footer-tabs";
 import { useFocusEffect } from "@react-navigation/native";
+import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -36,11 +38,12 @@ export default function AdminHomeScreen() {
   const facilityName =
     typeof params.facilityName === "string"
       ? params.facilityName
-      : "選択された施設";
+      : "何も選択されていません";
   const scene =
-    typeof params.scene === "string" ? params.scene : "選択されたシーン";
+    typeof params.scene === "string" ? params.scene : "何も選択されていません";
 
   const [groupId, setGroupId] = useState<string | null>(null);
+  const [eventCode, setEventCode] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [joinStatus, setJoinStatus] = useState<string | null>(null);
   const [missions, setMissions] = useState<Mission[]>([]);
@@ -63,6 +66,19 @@ export default function AdminHomeScreen() {
     }
   };
 
+  const loadEvent = async () => {
+    try {
+      const res = await tryFetch(`/api/events/${eventId}`);
+      const data = await res.json();
+
+      console.log("event =", data);
+
+      setEventCode(data.event_code);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const filteredMissions = missions.filter(
     (mission) => mission.event_id === Number(eventId),
   );
@@ -71,6 +87,7 @@ export default function AdminHomeScreen() {
 
   useEffect(() => {
     loadMissions();
+    loadEvent();
   }, []);
 
   useFocusEffect(
@@ -102,16 +119,19 @@ export default function AdminHomeScreen() {
       setJoinStatus(null);
 
       // グループコード生成
-      const groupCode = `ADM-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
       const groupName = `管理者グループ-${new Date().toLocaleDateString()}`;
 
-      console.log("[AdminHome] Creating group:", { groupName, groupCode });
+      console.log("[AdminHome] Creating group:", { groupName });
 
       const res = await tryFetch("/api/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ group_name: groupName, group_code: groupCode }),
+        body: JSON.stringify({
+          group_name: groupName,
+          created_by: 1,
+        }),
       });
+      console.log(res.status);
 
       if (!res.ok) {
         const error = await res.json();
@@ -136,41 +156,42 @@ export default function AdminHomeScreen() {
 
   const handleJoinGroup = async () => {
     try {
-      const code = joinCode.trim();
-      if (!code) {
-        setJoinStatus("参加コードを入力してください。");
-        return;
-      }
-
-      setIsJoiningGroup(true);
-      console.log("[AdminHome] Joining group:", { group_code: code });
-
-      const res = await tryFetch("/api/groups/join", {
+      const res = await tryFetch("/api/events/join", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ group_code: code }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          event_code: joinCode,
+        }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const error = await res.json();
-        setJoinStatus(`エラー: ${error.message}`);
+        setJoinStatus(data.message);
         return;
       }
 
-      const data = await res.json();
-      console.log("[AdminHome] Joined group:", data);
-
-      setJoinCode("");
-      setGroupId(code);
-      setJoinStatus("✅ グループに参加しました。");
+      router.replace({
+        pathname: "/admin-home",
+        params: {
+          eventId: data.event_id,
+          facilityName: data.group_name,
+          scene: data.event_name,
+        },
+      });
     } catch (err) {
-      console.error("[AdminHome] Error joining group:", err);
-      setJoinStatus(
-        `エラー: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    } finally {
-      setIsJoiningGroup(false);
+      console.error(err);
     }
+  };
+
+  const handleCopyEventCode = async () => {
+    if (!eventCode) return;
+
+    await Clipboard.setStringAsync(eventCode);
+
+    Alert.alert("コピーしました", "イベント参加コードをコピーしました。");
   };
 
   const FOOTER_HEIGHT = Platform.OS === "ios" ? 86 : 72;
@@ -196,23 +217,25 @@ export default function AdminHomeScreen() {
 
         <View style={styles.groupSection}>
           <Text style={styles.sectionTitle}>管理者グループ</Text>
+
           <TouchableOpacity
-            style={[
-              styles.groupButton,
-              isCreatingGroup && styles.groupButtonDisabled,
-            ]}
-            onPress={generateGroupId}
-            activeOpacity={0.85}
-            disabled={isCreatingGroup}
+            style={styles.groupButton}
+            onPress={handleCopyEventCode}
           >
             <Text style={styles.groupButtonText}>
-              {isCreatingGroup ? "作成中..." : "グループIDを発行"}
+              イベント参加コードをコピー
             </Text>
           </TouchableOpacity>
+          <View style={styles.groupCard}>
+            <Text style={styles.groupCardLabel}>イベント参加コード</Text>
+
+            <Text style={styles.groupCardValue}>{eventCode}</Text>
+          </View>
           {groupId ? (
             <View style={styles.groupCard}>
-              <Text style={styles.groupCardLabel}>発行されたグループID</Text>
-              <Text style={styles.groupCardValue}>{groupId}</Text>
+              <Text style={styles.groupCardLabel}>イベント参加コード</Text>
+
+              <Text style={styles.groupCardValue}>{eventCode}</Text>
             </View>
           ) : null}
           <TextInput

@@ -35,19 +35,6 @@ export default function AdminMissionReviewScreen() {
     (mission) => eventId === "" || mission.eventId === eventId,
   );
 
-<<<<<<< HEAD
-  const params = useLocalSearchParams();
-
-  const eventId = typeof params.eventId === "string" ? params.eventId : "";
-
-  const filteredMissions = missions.filter(
-    (mission) => mission.eventId === eventId,
-=======
-  const filteredMissions = missions.filter(
-    (mission) => eventId === "" || mission.eventId === eventId,
->>>>>>> origin/feature/dai
-  );
-
   const loadMissions = async () => {
     try {
       const stored = await SecureStore.getItemAsync(MISSION_STORE_KEY);

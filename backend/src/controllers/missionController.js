@@ -2,7 +2,12 @@ const db = require("../config/db");
 
 const getMission = async (req, res) => {
   try {
-    const [rows] = await db.promise().query("SELECT * FROM missions");
+    const { event_id } = req.query;
+
+    const [rows] = await db
+      .promise()
+      .query("SELECT * FROM missions WHERE event_id = ?", [event_id]);
+
     res.json(rows);
   } catch (err) {
     console.log(err);

@@ -13,17 +13,25 @@ import {
 } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import tryFetch from "../lib/api";
+// @ts-ignore
+const SecureStore = require("expo-secure-store");
 
 export default function HomeScreen() {
   const router = useRouter();
   const auth = useAuth();
   // ✅ 配列として持つ
   const [mission, setMission] = useState<any[]>([]);
+  const [eventInfo, setEventInfo] = useState<any>(null);
 
   useEffect(() => {
+    if (!eventInfo) return;
+
     const fetchMission = async () => {
       try {
-        const res = await tryFetch("/api/missions");
+        const res = await tryFetch(
+          `/api/missions?event_id=${eventInfo.event_id}`,
+        );
+
         const data = await res.json();
 
         console.log("mission raw:", data);
@@ -36,6 +44,19 @@ export default function HomeScreen() {
     };
 
     fetchMission();
+  }, [eventInfo]);
+
+  useEffect(() => {
+    const loadEvent = async () => {
+      const saved = await SecureStore.getItemAsync("currentEvent");
+
+      if (saved) {
+        console.log(JSON.parse(saved)); // ←追加
+        setEventInfo(JSON.parse(saved));
+      }
+    };
+
+    loadEvent();
   }, []);
 
   // ✅ 1件目を安全に取り出す
@@ -48,9 +69,13 @@ export default function HomeScreen() {
 
   const handleStartMission = async () => {
     try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
       if (!permissionResult.granted) {
-        Alert.alert("カメラ許可が必要です", "ミッションを開始するにはカメラアクセスを許可してください。");
+        Alert.alert(
+          "カメラ許可が必要です",
+          "ミッションを開始するにはカメラアクセスを許可してください。",
+        );
         return;
       }
       console.log("current mission:", current);
@@ -62,7 +87,8 @@ export default function HomeScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
       });
 
-      const didCancel = (pickerResult as any).cancelled || (pickerResult as any).canceled;
+      const didCancel =
+        (pickerResult as any).cancelled || (pickerResult as any).canceled;
       const imageUri =
         (pickerResult as any).uri ||
         pickerResult.assets?.[0]?.uri ||
@@ -73,7 +99,10 @@ export default function HomeScreen() {
       }
 
       if (!current?.mission_id) {
-        Alert.alert("ミッションが読み込まれていません", "ミッション情報を取得してから再度お試しください。");
+        Alert.alert(
+          "ミッションが読み込まれていません",
+          "ミッション情報を取得してから再度お試しください。",
+        );
         return;
       }
 
@@ -101,7 +130,21 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.cardContainer}>
-        <Text style={styles.cardTitle}>カテゴリー:文化祭{"\n"}MISSION</Text>
+        <Text style={styles.cardTitle}>
+          カテゴリー：{eventInfo?.event_name ?? "読み込み中..."}
+          {"\n"}
+          MISSION
+        </Text>
+
+        <Text
+          style={{
+            textAlign: "center",
+            marginBottom: 12,
+            color: "#666",
+          }}
+        >
+          コミュニティ：{eventInfo?.group_name ?? "読み込み中..."}
+        </Text>
 
         {/* プレビュー */}
         <View style={styles.previewBox}>
@@ -131,7 +174,11 @@ export default function HomeScreen() {
         </View>
 
         {/* ボタン */}
-        <TouchableOpacity style={styles.startButton} activeOpacity={0.85} onPress={handleStartMission}>
+        <TouchableOpacity
+          style={styles.startButton}
+          activeOpacity={0.85}
+          onPress={handleStartMission}
+        >
           <Text style={styles.startButtonText}>START MISSION ›</Text>
         </TouchableOpacity>
       </View>
