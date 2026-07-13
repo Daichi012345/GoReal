@@ -246,13 +246,39 @@ CREATE TABLE events (
 
     group_id INT NOT NULL,
 
-    event_name VARCHAR(100) NOT NULL UNIQUE,
+    event_name VARCHAR(100) NOT NULL,
+
+    event_code VARCHAR(10) NOT NULL UNIQUE,
 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_event_group
     FOREIGN KEY (group_id)
     REFERENCES community_groups(group_id)
+
+);
+
+
+CREATE TABLE event_members (
+
+    event_member_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    event_id INT NOT NULL,
+
+    user_id INT NOT NULL,
+
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_event_member_event
+    FOREIGN KEY (event_id)
+    REFERENCES events(event_id)
+    ON DELETE CASCADE,
+
+    CONSTRAINT fk_event_member_user
+    FOREIGN KEY (user_id)
+    REFERENCES users(user_id),
+
+    UNIQUE(event_id, user_id)
 
 );
 
@@ -369,149 +395,149 @@ CREATE TABLE posts (
 -- TEST USERS
 -- ==========================================
 
-INSERT INTO users
-(
-    user_name,
-    email,
-    password,
-    role,
-    total_exp,
-    level_id
-)
+-- INSERT INTO users
+-- (
+--     user_name,
+--     email,
+--     password,
+--     role,
+--     total_exp,
+--     level_id
+-- )
 
 -- ==========================================
 -- TEST GROUP
 -- ==========================================
 
-INSERT INTO community_groups
-(
-    group_name,
-    group_code,
-    created_by
-)
-VALUES
-(
-    '3-1クラス',
-    'ABC123',
-    1
-);
+-- INSERT INTO community_groups
+-- (
+--     group_name,
+--     group_code,
+--     created_by
+-- )
+-- VALUES
+-- (
+--     '3-1クラス',
+--     'ABC123',
+--     1
+-- );
 
 -- ==========================================
 -- TEST MEMBERS
 -- ==========================================
 
-INSERT INTO group_members
-(
-    group_id,
-    user_id
-)
-VALUES
-(1,1),
-(1,2),
-(1,3);
+-- INSERT INTO group_members
+-- (
+--     group_id,
+--     user_id
+-- )
+-- VALUES
+-- (1,1),
+-- (1,2),
+-- (1,3);
 
 -- ==========================================
 -- TEST EVENTS
 -- ==========================================
 
-INSERT INTO events
-(
-    group_id,
-    event_name
-)
-VALUES
-(
-    1,
-    '文化祭2026'
-),
-(
-    1,
-    '体育祭2026'
-);
+-- INSERT INTO events
+-- (
+--     group_id,
+--     event_name
+-- )
+-- VALUES
+-- (
+--     1,
+--     '文化祭2026'
+-- ),
+-- (
+--     1,
+--     '体育祭2026'
+-- );
 
 -- ==========================================
 -- TEST MISSIONS
 -- ==========================================
 
-INSERT INTO missions
-(
-    event_id,
-    mission_title,
-    mission_detail,
-    reward_exp
-)
-VALUES
-(
-    1,
-    '体育館の写真を撮ろう',
-    '文化祭会場である体育館の写真を投稿してください',
-    100
-),
-(
-    1,
-    '模擬店の写真を撮ろう',
-    '好きな模擬店の写真を投稿してください',
-    150
-),
-(
-    1,
-    'クラスTシャツを投稿しよう',
-    'クラスTシャツが写るように撮影してください',
-    200
-),
-(
-    2,
-    '玉入れの写真を撮ろう',
-    '競技中の玉入れの様子を撮影してください',
-    100
-),
-(
-    2,
-    'リレーの写真を撮ろう',
-    'リレー競技中の写真を投稿してください',
-    150
-),
-(
-    2,
-    '応援団の写真を撮ろう',
-    '応援団の様子を撮影してください',
-    200
-);
+-- INSERT INTO missions
+-- (
+--     event_id,
+--     mission_title,
+--     mission_detail,
+--     reward_exp
+-- )
+-- VALUES
+-- (
+--     1,
+--     '体育館の写真を撮ろう',
+--     '文化祭会場である体育館の写真を投稿してください',
+--     100
+-- ),
+-- (
+--     1,
+--     '模擬店の写真を撮ろう',
+--     '好きな模擬店の写真を投稿してください',
+--     150
+-- ),
+-- (
+--     1,
+--     'クラスTシャツを投稿しよう',
+--     'クラスTシャツが写るように撮影してください',
+--     200
+-- ),
+-- (
+--     2,
+--     '玉入れの写真を撮ろう',
+--     '競技中の玉入れの様子を撮影してください',
+--     100
+-- ),
+-- (
+--     2,
+--     'リレーの写真を撮ろう',
+--     'リレー競技中の写真を投稿してください',
+--     150
+-- ),
+-- (
+--     2,
+--     '応援団の写真を撮ろう',
+--     '応援団の様子を撮影してください',
+--     200
+-- );
 
 -- ==========================================
 -- TEST SUBMISSION
 -- ==========================================
 
-INSERT INTO mission_submissions
-(
-    mission_id,
-    user_id,
-    photo_path,
-    comment,
-    status
-)
-VALUES
-(
-    1,
-    2,
-    '/uploads/gym.jpg',
-    '体育館の写真を撮りました',
-    'APPROVED'
-);
+-- INSERT INTO mission_submissions
+-- (
+--     mission_id,
+--     user_id,
+--     photo_path,
+--     comment,
+--     status
+-- )
+-- VALUES
+-- (
+--     1,
+--     2,
+--     '/uploads/gym.jpg',
+--     '体育館の写真を撮りました',
+--     'APPROVED'
+-- );
 
 -- ==========================================
 -- TEST POST
 -- ==========================================
 
-INSERT INTO posts
-(
-    submission_id,
-    user_id,
-    caption
-)
-VALUES
-(
-    1,
-    2,
-    '文化祭楽しみました！'
-);
+-- INSERT INTO posts
+-- (
+--     submission_id,
+--     user_id,
+--     caption
+-- )
+-- VALUES
+-- (
+--     1,
+--     2,
+--     '文化祭楽しみました！'
+-- );

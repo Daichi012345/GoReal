@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE;
+// @ts-ignore
 // @ts-ignore
 const SecureStore = require("expo-secure-store");
 
@@ -38,11 +40,15 @@ export default function AdminCreateMissionScreen() {
       ? params.missionText
       : "3-1の教室で写真を撮ろう！";
 
-  const [missionText, setMissionText] = useState(initialMission);
+  const [missionTitle, setMissionTitle] = useState("");
+  const [missionDetail, setMissionDetail] = useState(initialMission);
 
   const handleCreate = async () => {
-    const text = missionText.trim();
-    if (!text) {
+    const title = missionTitle.trim();
+    const detail = missionDetail.trim();
+
+    if (!title || !detail) {
+      alert("タイトルと詳細を入力してください。");
       return;
     }
 
@@ -51,23 +57,53 @@ export default function AdminCreateMissionScreen() {
       eventId,
       facilityName,
       scene,
-      text,
+      text: detail,
       createdAt: new Date().toLocaleString(),
     };
 
     try {
-      const stored = await SecureStore.getItemAsync(MISSION_STORE_KEY);
-      const parsed: Mission[] = stored ? JSON.parse(stored) : [];
-      const updated = [newMission, ...parsed];
-      await SecureStore.setItemAsync(
-        MISSION_STORE_KEY,
-        JSON.stringify(updated),
-      );
+      const res = await fetch(`${API_BASE}/api/missions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          event_id: Number(eventId),
+          mission_title: title,
+          mission_detail: detail,
+          reward_exp: 100,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.message || "サーバーエラー");
+        return;
+      }
+
+      // API 成功後はローカルにも保存しておく（admin-home は SecureStore を参照するため）
+      try {
+        const stored = await SecureStore.getItemAsync(MISSION_STORE_KEY);
+        const parsed: Mission[] = stored ? JSON.parse(stored) : [];
+        const updated = [newMission, ...parsed];
+        await SecureStore.setItemAsync(
+          MISSION_STORE_KEY,
+          JSON.stringify(updated),
+        );
+      } catch (err) {
+        console.warn("Failed to save mission to SecureStore", err);
+      }
     } catch (error) {
-      console.warn("Failed to save mission", error);
+      console.error(error);
+      alert("ミッション作成失敗");
+      return;
     }
 
-    router.replace("/admin-home");
+    router.replace(
+      `/admin-home?facilityName=${encodeURIComponent(
+        facilityName,
+      )}&scene=${encodeURIComponent(scene)}&eventId=${eventId}`,
+    );
   };
 
   return (
@@ -88,11 +124,23 @@ export default function AdminCreateMissionScreen() {
       </View>
 
       <View style={styles.card}>
+        <Text style={styles.label}>ミッションタイトル</Text>
+
+        <TextInput
+          style={styles.titleInput}
+          placeholder="例：教室で写真を撮ろう"
+          value={missionTitle}
+          onChangeText={setMissionTitle}
+        />
+
+        <Text style={[styles.label, { marginTop: 20 }]}>ミッション詳細</Text>
+
         <TextInput
           style={styles.missionInput}
           multiline
-          value={missionText}
-          onChangeText={setMissionText}
+          placeholder="ミッションの詳しい説明を入力してください"
+          value={missionDetail}
+          onChangeText={setMissionDetail}
         />
       </View>
 
@@ -148,4 +196,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   createButtonText: { color: "#fff", fontSize: 18, fontWeight: "800" },
+
+  label: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+
+  titleInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    backgroundColor: "#fff",
+  },
 });

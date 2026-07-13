@@ -2,6 +2,8 @@ const db = require("../config/db");
 
 // コミュニティグループ作成
 const createGroup = async (req, res) => {
+  console.log("createGroup呼ばれた");
+  console.log(req.body);
   try {
     const { group_name, created_by } = req.body;
 
