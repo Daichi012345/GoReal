@@ -28,6 +28,11 @@ export default function LoginScreen() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminJoinCode, setAdminJoinCode] = useState("");
   const [adminJoinStatus, setAdminJoinStatus] = useState<string | null>(null);
+  const [showParticipantModal, setShowParticipantModal] = useState(false);
+  const [participantJoinCode, setParticipantJoinCode] = useState("");
+  const [participantJoinStatus, setParticipantJoinStatus] = useState<
+    string | null
+  >(null);
 
   const onLogin = async (role: "admin" | "participant") => {
     setLoading(true);
@@ -41,16 +46,15 @@ export default function LoginScreen() {
       if (res.ok) {
         if (data.token && data.user) await auth.signIn(data.token, data.user);
         if (role === "admin") {
-          // force admin session flag so UI treats this device as admin session
           try {
             await SecureStore.setItemAsync("isAdminSession", "true");
           } catch (e) {
-            console.warn("Failed to set isAdminSession", e);
+            console.warn(e);
           }
-          // show admin choice modal: issue ID or join as admin
+
           setShowAdminModal(true);
         } else {
-          router.replace("/(tabs)");
+          setShowParticipantModal(true);
         }
       } else if (res.status === 401) {
         Alert.alert(
@@ -130,7 +134,6 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-
       <Modal
         visible={showAdminModal}
         transparent
@@ -172,16 +175,36 @@ export default function LoginScreen() {
 
             <TouchableOpacity
               style={[styles.modalPrimary, { backgroundColor: "#111" }]}
-              onPress={() => {
-                const code = adminJoinCode.trim();
-                if (!code) {
-                  setAdminJoinStatus("参加コードを入力してください。");
-                  return;
+              onPress={async () => {
+                try {
+                  const code = adminJoinCode.trim();
+                  if (!code) {
+                    setAdminJoinStatus("参加コードを入力してください。");
+                    return;
+                  }
+                  const res = await tryFetch("/api/events/join", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ event_code: code }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    setAdminJoinStatus(data.message);
+                    return;
+                  }
+                  setShowAdminModal(false);
+                  router.replace({
+                    pathname: "/admin-home",
+                    params: {
+                      eventId: data.event_id,
+                      facilityName: data.group_name,
+                      scene: data.event_name,
+                    },
+                  });
+                } catch (err) {
+                  console.error(err);
+                  setAdminJoinStatus("サーバーエラー");
                 }
-                setShowAdminModal(false);
-                router.replace(
-                  `/admin-home?joinCode=${encodeURIComponent(code)}`,
-                );
               }}
               activeOpacity={0.85}
             >
@@ -199,6 +222,92 @@ export default function LoginScreen() {
           </View>
         </View>
       </Modal>
+      <Modal
+        visible={showParticipantModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowParticipantModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>参加するイベントを選択</Text>
+            <Text style={{ marginBottom: 8, color: "#444" }}>
+              イベント参加コードを入力してください。
+            </Text>
+
+            <TextInput
+              style={styles.modalInput}
+              placeholder="管理者参加コードを入力"
+              placeholderTextColor="#999"
+              value={participantJoinCode}
+              onChangeText={(t) => {
+                setParticipantJoinCode(t);
+                setParticipantJoinStatus(null);
+              }}
+              autoCapitalize="characters"
+            />
+            {participantJoinStatus ? (
+              <Text style={styles.joinStatus}>{participantJoinStatus}</Text>
+            ) : null}
+
+            <TouchableOpacity
+              style={[styles.modalPrimary, { backgroundColor: "#111" }]}
+              onPress={async () => {
+                try {
+                  const code = participantJoinCode.trim();
+
+                  if (!code) {
+                    setParticipantJoinStatus("参加コードを入力してください。");
+                    return;
+                  }
+
+                  const res = await tryFetch("/api/events/join", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      event_code: code,
+                    }),
+                  });
+
+                  const data = await res.json();
+
+                  if (!res.ok) {
+                    setParticipantJoinStatus(data.message);
+                    return;
+                  }
+
+                  await SecureStore.setItemAsync(
+                    "currentEvent",
+                    JSON.stringify(data),
+                  );
+
+                  setShowParticipantModal(false);
+
+                  router.replace("/(tabs)");
+                } catch (err) {
+                  console.error(err);
+                  setParticipantJoinStatus("サーバーエラー");
+                }
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.modalPrimaryText, { color: "#fff" }]}>
+                イベントに参加
+              </Text>
+            </TouchableOpacity>
+
+            <Pressable
+              onPress={() => setShowParticipantModal(false)}
+              style={{ marginTop: 12 }}
+            >
+              <Text style={{ color: "#666" }}>キャンセル</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+      ;
     </SafeAreaView>
   );
 }
