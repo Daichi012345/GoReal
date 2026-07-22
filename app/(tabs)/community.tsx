@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from "react";
 import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import tryFetch from "../lib/api";
+// @ts-ignore
+const SecureStore = require("expo-secure-store");
 
 interface NotificationItem {
   id: string;
@@ -21,28 +24,70 @@ interface NotificationItem {
   is_read: boolean;
 }
 
-const POSTS = [
-  {
-    id: "1",
-    name: "Atsu",
-    level: "LEVEL 13",
-    time: "10 min",
-    prompt: "MISSION PHOTO: ROOFTOP VIEW AT SECTOR 7",
-  },
-  {
-    id: "2",
-    name: "Dai",
-    level: "LEVEL 11",
-    time: "5 min",
-    prompt: "MISSION PHOTO: ROOFTOP VIEW AT SECTOR 7",
-  },
-];
+type CommunityPost = {
+  post_id: number;
+  caption: string | null;
+  post_created_at: string;
+  submission_id: number;
+  submission_comment: string | null;
+  submitted_at: string;
+  mission_id: number;
+  mission_title: string;
+  event_id: number;
+  event_name: string;
+  user: {
+    user_id: number;
+    user_name: string;
+    icon_image: string | null;
+  };
+  photo_url: string | null;
+};
 
 export default function CommunityScreen() {
   const [showNotif, setShowNotif] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [notificationError, setNotificationError] = useState<string | null>(null);
+  const [currentEvent, setCurrentEvent] = useState<any>(null);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
+
+  const loadCurrentEvent = async () => {
+    try {
+      const saved = await SecureStore.getItemAsync("currentEvent");
+      setCurrentEvent(saved ? JSON.parse(saved) : null);
+    } catch (error) {
+      console.warn("loadCurrentEvent error", error);
+      setCurrentEvent(null);
+    }
+  };
+
+  const fetchPosts = async (eventId: number) => {
+    setLoadingPosts(true);
+    setPostError(null);
+
+    try {
+      const response = await tryFetch(`/api/community/feed?event_id=${eventId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || "投稿の取得に失敗しました");
+      }
+
+      if (!Array.isArray(data.posts)) {
+        throw new Error("投稿データが不正です");
+      }
+
+      setPosts(data.posts);
+    } catch (error: any) {
+      console.warn("fetchPosts error", error);
+      setPostError(error?.message || "投稿の取得に失敗しました");
+      setPosts([]);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
 
   const fetchNotifications = async () => {
     setLoadingNotifications(true);
@@ -120,15 +165,30 @@ export default function CommunityScreen() {
   };
 
   useEffect(() => {
+    loadCurrentEvent();
+  }, []);
+
+  useEffect(() => {
     if (showNotif) {
       fetchNotifications();
     }
   }, [showNotif]);
 
+  useEffect(() => {
+    if (currentEvent?.event_id) {
+      fetchPosts(Number(currentEvent.event_id));
+    }
+  }, [currentEvent]);
+
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>COMMUNITY</Text>
+        <View>
+          <Text style={styles.headerTitle}>COMMUNITY</Text>
+          <Text style={styles.headerSubtitle}>
+            {currentEvent?.event_name || currentEvent?.group_name || "参加中のイベント"}
+          </Text>
+        </View>
         <Pressable
           style={styles.searchButton}
           accessibilityRole="button"
@@ -183,27 +243,63 @@ export default function CommunityScreen() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
-        {POSTS.map((post) => (
-          <View key={post.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{post.name[0]}</Text>
+        {!currentEvent ? (
+          <Text style={styles.emptyFeedText}>イベント参加後に投稿が表示されます</Text>
+        ) : loadingPosts ? (
+          <Text style={styles.emptyFeedText}>投稿を読み込み中...</Text>
+        ) : postError ? (
+          <Text style={styles.emptyFeedText}>{postError}</Text>
+        ) : posts.length === 0 ? (
+          <Text style={styles.emptyFeedText}>このイベントの投稿はまだありません</Text>
+        ) : (
+          posts.map((post) => (
+            <View key={post.post_id} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.avatar}>
+                  {post.user.icon_image ? (
+                    <Image source={{ uri: post.user.icon_image }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.avatarText}>{post.user.user_name?.[0] || "?"}</Text>
+                  )}
+                </View>
+                <View style={styles.userBlock}>
+                  <Text style={styles.userName}>{post.user.user_name}</Text>
+                  <Text style={styles.userLevel}>{post.mission_title}</Text>
+                </View>
+                <Text style={styles.timeText}>
+                  {post.post_created_at
+                    ? new Date(post.post_created_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : ""}
+                </Text>
               </View>
-              <View style={styles.userBlock}>
-                <Text style={styles.userName}>{post.name}</Text>
-                <Text style={styles.userLevel}>{post.level}</Text>
+              <View style={styles.imagePlaceholder}>
+                {post.photo_url ? (
+                  <Image source={{ uri: post.photo_url }} style={styles.postImage} />
+                ) : (
+                  <>
+                    <View style={styles.placeholderIcon}>
+                      <View style={styles.placeholderDot} />
+                      <View style={styles.placeholderLine} />
+                    </View>
+                    <Text style={styles.placeholderText}>
+                      {post.caption || post.submission_comment || "投稿がありません"}
+                    </Text>
+                  </>
+                )}
               </View>
-              <Text style={styles.timeText}>{post.time}</Text>
+              {(post.caption || post.submission_comment) ? (
+                <View style={styles.captionBox}>
+                  <Text style={styles.captionText}>
+                    {post.caption || post.submission_comment}
+                  </Text>
+                </View>
+              ) : null}
             </View>
-            <View style={styles.imagePlaceholder}>
-              <View style={styles.placeholderIcon}>
-                <View style={styles.placeholderDot} />
-                <View style={styles.placeholderLine} />
-              </View>
-              <Text style={styles.placeholderText}>{post.prompt}</Text>
-            </View>
-          </View>
-        ))}
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -223,6 +319,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "800",
     letterSpacing: 1,
+  },
+  headerSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    color: "#666",
   },
   searchButton: {
     width: 30,
@@ -261,6 +362,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
   },
   avatarText: { fontSize: 12, fontWeight: "700" },
   userBlock: { flex: 1 },
@@ -278,12 +384,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   imagePlaceholder: {
-    height: 190,
+    minHeight: 190,
     backgroundColor: "#d7d7db",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 12,
     rowGap: 8,
+  },
+  postImage: {
+    width: "100%",
+    height: 190,
+    resizeMode: "cover",
   },
   placeholderIcon: {
     width: 22,
@@ -315,6 +426,22 @@ const styles = StyleSheet.create({
     color: "#7a7a7a",
     letterSpacing: 0.4,
     textAlign: "center",
+  },
+  captionBox: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#111",
+  },
+  captionText: {
+    fontSize: 12,
+    color: "#222",
+    lineHeight: 18,
+  },
+  emptyFeedText: {
+    color: "#666",
+    textAlign: "center",
+    paddingVertical: 24,
   },
   modalOverlay: {
     flex: 1,

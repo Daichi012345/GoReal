@@ -192,6 +192,12 @@ export default function LoginScreen() {
                     setAdminJoinStatus(data.message);
                     return;
                   }
+
+                  await SecureStore.setItemAsync(
+                    "currentEvent",
+                    JSON.stringify(data),
+                  );
+
                   setShowAdminModal(false);
                   router.replace({
                     pathname: "/admin-home",
@@ -307,7 +313,6 @@ export default function LoginScreen() {
           </View>
         </View>
       </Modal>
-      ;
     </SafeAreaView>
   );
 }
