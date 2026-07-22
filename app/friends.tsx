@@ -53,7 +53,7 @@ export default function FriendsScreen() {
 
           {incomingRequests.length > 0 && (
             <View style={styles.section}>
-              <ThemedText type="subtitle" style={styles.sectionTitle}>受信リクエスト</ThemedText>
+              <ThemedText type="subtitle" style={styles.sectionTitle}>受信申請yリクエスト</ThemedText>
               {incomingRequests.map((request) => (
                 <View key={request.id} style={styles.requestRow}>
                   <View style={styles.requestInfo}>
